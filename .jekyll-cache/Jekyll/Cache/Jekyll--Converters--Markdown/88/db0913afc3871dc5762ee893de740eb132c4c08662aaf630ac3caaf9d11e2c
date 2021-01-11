@@ -1,0 +1,66 @@
+I"�"<h1 id="进入正题">进入正题</h1>
+<blockquote>
+  <p>最近在学习python,也才学习两天吧,可谓是零基础,但是通过这两天的接触让我明白了python真的是简单易学的语言,于是我就膨胀了.看到bad apple 字符动画挺火的就像来跃跃欲试,网上的貌似都是在网页上播放,我就想能不能做成一个视屏呢?</p>
+</blockquote>
+
+<h1 id="实现原理">实现原理</h1>
+<p>众所周知视屏其实就是由一副副图片组成的并按照一定的速度进行播放就形成了视频,所以可以把视频的每一帧提取出来进行修改,然后组成新的视频.首先我们先下载目标视频把目标视屏的每一帧提取成图片,然后把图片进行灰度处理形成灰度图,然后把每个像素映射成字符形成新的图片就可以了.(以上理论可能有错误,请包涵)</p>
+
+<p># 来上代码</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># 我原视频是1400 * 1080 但是我们处理的时候要进行缩放 
+</span><span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="c1">#导入视频文件
+</span><span class="n">cap</span> <span class="o">=</span> <span class="n">cv2</span><span class="p">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="s">"test.mkv"</span><span class="p">)</span>
+<span class="c1">#创建字符数组
+</span><span class="n">ascii_char</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="s">"$B%8&amp;WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~&lt;&gt;i!lI;:, "</span><span class="p">)</span>
+<span class="c1">#指定保存视频的码率
+</span><span class="n">fourcc</span> <span class="o">=</span> <span class="n">cv2</span><span class="p">.</span><span class="n">VideoWriter_fourcc</span><span class="p">(</span><span class="o">*</span><span class="s">'MJPG'</span><span class="p">)</span>
+<span class="c1">#创建视屏写出对象
+</span><span class="n">out</span> <span class="o">=</span> <span class="n">cv2</span><span class="p">.</span><span class="n">VideoWriter</span><span class="p">(</span><span class="s">'output.avi'</span><span class="p">,</span> <span class="n">fourcc</span><span class="p">,</span> <span class="n">cap</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="p">.</span><span class="n">CAP_PROP_FPS</span><span class="p">),</span> <span class="p">(</span><span class="mi">1440</span><span class="p">,</span> <span class="mi">1080</span><span class="p">))</span>
+<span class="c1">#循环读取源视频帧数
+</span><span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+    <span class="n">ret</span><span class="p">,</span><span class="n">frame</span> <span class="o">=</span> <span class="n">cap</span><span class="p">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="k">break</span>
+    <span class="c1">#原视屏帧进行缩小
+</span>    <span class="n">resize</span> <span class="o">=</span> <span class="n">cv2</span><span class="p">.</span><span class="n">resize</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mi">1440</span> <span class="o">/</span> <span class="mi">10</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1080</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">cv2</span><span class="p">.</span><span class="n">INTER_CUBIC</span><span class="p">)</span>
+    <span class="c1">#转换为灰度图
+</span>    <span class="n">gray</span> <span class="o">=</span> <span class="n">cv2</span><span class="p">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">resize</span><span class="p">,</span> <span class="n">cv2</span><span class="p">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+    <span class="c1">#创建新的图片
+</span>    <span class="n">zeros</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1080</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="p">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="c1">#使用白色填满整个图片
+</span>    <span class="n">zeros</span><span class="p">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span>
+    <span class="c1">#遍历原视屏帧的整个像素
+</span>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ivalue</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">gray</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="s">""</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">jvalue</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ivalue</span><span class="p">):</span>
+            <span class="c1">#把每个像素点转换为字符串
+</span>            <span class="n">result</span> <span class="o">+=</span> <span class="n">ascii_char</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">jvalue</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ascii_char</span><span class="p">))]</span>
+        <span class="c1">#把字符画在图片上
+</span>        <span class="n">cv2</span><span class="p">.</span><span class="n">putText</span><span class="p">(</span><span class="n">zeros</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">i</span> <span class="o">*</span> <span class="mi">10</span><span class="p">),</span> <span class="n">cv2</span><span class="p">.</span><span class="n">FONT_HERSHEY_PLAIN</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lineType</span><span class="o">=</span><span class="n">cv2</span><span class="p">.</span><span class="n">LINE_AA</span><span class="p">)</span>
+    <span class="c1">#把图片输出到新的视频文件上
+</span>    <span class="n">out</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">zeros</span><span class="p">)</span>
+<span class="c1">#释放资源
+</span><span class="n">cap</span><span class="p">.</span><span class="n">release</span><span class="p">()</span>
+<span class="n">out</span><span class="p">.</span><span class="n">release</span><span class="p">()</span>
+
+</code></pre></div></div>
+
+<p># 善后</p>
+
+<p>通过以上的步骤我们成功的生成了字符串动画,但是总感觉差点啥,是不是没声音呀??那就需要把音轨合成到视屏中去,那音轨又从哪里来呢??没关系我们可以从原视频中提取出来</p>
+
+<p>## 提取音轨
+  提取音轨可以使用ffmpeg 这个软件,在mac下可以通过brew进行安装,其他的操作系统我就不知道了.
+  安装好后使用命令<code class="language-plaintext highlighter-rouge">ffmpeg -i 需要提取的目标视频文件 输出文件名</code>来提取音轨文件</p>
+<h2 id="音轨合成到原视频">音轨合成到原视频</h2>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>上面提取成功了音轨,这里要说说怎么把音轨合成到视频中,同样使用命令`ffmpeg -i 音轨文件 -i 需要合成的目标文件 输出文件名称`
+</code></pre></div></div>
+
+<h1 id="效果">效果</h1>
+<p>视频就不展示,看一下gif图吧<br />
+ <img src="https://upload-images.jianshu.io/upload_images/8958298-5fc487339f9d5554.gif?imageMogr2/auto-orient/strip" alt="image" /></p>
+
+:ET

@@ -1,0 +1,34 @@
+I"!<h1 id="一前言">一、前言</h1>
+
+<p>最近在整公司IPC的更新功能,为了保证更新阶段的灵活性,思路为使用编写好的脚本进行更新,当更新失败的时候使用编写好的脚本进行回滚.感觉难度不是很大.但是在实现的过程中还是遇到了一个坑.</p>
+
+<h1 id="二踩坑">二、踩坑</h1>
+
+<p>当程序是以服务的方式运行的时候,我尝试过使用<code class="language-plaintext highlighter-rouge">system</code>、<code class="language-plaintext highlighter-rouge">ShellExecute</code>、<code class="language-plaintext highlighter-rouge">ShellExecuteEx</code>方式去执行写好的脚本,发现每次代码执行过后,脚本是没有被执行到的,但用vc调试的时候,发现是被执行了的.就感觉很奇怪了.貌似更windows的服务机制是有关的.具体的机制不太清楚,毕竟我只是一个javaer.抱着以解决问题为目的,在Stack Overflow上面找到了答案,使用创建进程的方式调用bat文件.下面开始贴代码了.</p>
+
+<h1 id="三填坑">三、填坑</h1>
+
+<p>具体代码如下:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/***
+*执行批处理
+*/</span>
+<span class="kt">void</span> <span class="nf">execuBAT</span><span class="p">(</span><span class="n">TCHAR</span> <span class="o">*</span><span class="n">batPath</span><span class="p">)</span> <span class="p">{</span>
+
+	<span class="n">PROCESS_INFORMATION</span> <span class="n">pi</span><span class="p">;</span>
+	<span class="n">STARTUPINFO</span> <span class="n">si</span><span class="p">;</span>
+	<span class="n">ZeroMemory</span><span class="p">(</span><span class="o">&amp;</span><span class="n">si</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">si</span><span class="p">));</span>
+	<span class="n">si</span><span class="p">.</span><span class="n">cb</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">si</span><span class="p">);</span>
+	<span class="n">si</span><span class="p">.</span><span class="n">hStdInput</span> <span class="o">=</span> <span class="n">GetStdHandle</span><span class="p">(</span><span class="n">STD_INPUT_HANDLE</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">CreateProcess</span><span class="p">(</span><span class="n">batPath</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="n">CREATE_NO_WINDOW</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">si</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pi</span><span class="p">))</span> <span class="p">{</span>
+		<span class="n">WaitForSingleObject</span><span class="p">(</span><span class="n">pi</span><span class="p">.</span><span class="n">hProcess</span><span class="p">,</span> <span class="n">INFINITE</span><span class="p">);</span><span class="c1">// 等待bat执行结束</span>
+		<span class="n">CloseHandle</span><span class="p">(</span><span class="n">pi</span><span class="p">.</span><span class="n">hProcess</span><span class="p">);</span>
+		<span class="n">CloseHandle</span><span class="p">(</span><span class="n">pi</span><span class="p">.</span><span class="n">hThread</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h1 id="四总结">四、总结</h1>
+
+<p>在当今百度已死的情况下,遇到问题去google 一下 还是会有不错的收获的.</p>
+:ET

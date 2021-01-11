@@ -1,0 +1,76 @@
+I"
+<h1 id="redis-安装笔记">redis 安装笔记</h1>
+
+<h2 id="一前言">一、前言</h2>
+
+<p>改代码的时候需要用redis的环境来验证代码正确性,很遗憾家中没有redis环境,只有自己安装一个redis了.此文作为安装笔记,以免后面踩踩过的.</p>
+
+<h2 id="二安装与编译">二、安装与编译</h2>
+
+<p>官方的文档上面是自己编译安装.首先得要下载redis的源码,进行编译.</p>
+
+<ol>
+  <li>
+    <p>下载源码</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget http://download.redis.io/releases/redis-4.0.9.tar.gz
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>解压</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tar xzf redis-4.0.9.tar.gz
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>编译</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//编译前先安装依赖gc 和 gc++
+yum install gcc gcc-c++ -y
+cd redis-4.0.9 &amp;&amp; make MALLOC=libc
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Test</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//测试之前安装tcl
+yum install tcl -y
+make test
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>安装</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make install
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="三使用redis">三、使用redis</h2>
+
+<ol>
+  <li>
+    <p>修改redis 配置文件为后台启动</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>//在redis 解压包中有个redis.conf文件,这个配置文件是官方的配置示例文件
+//找到redis.conf中的daemonize  设置为yes
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>启动redis-server并加载配置文件</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>redis-server /root/redis-4.0.9/redis.conf
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>使用redis-cli 连接redis-server</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>redis-cli //默认连接本地默认端口的redis-server
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="四总结">四、总结</h2>
+
+<p>redis安装还是听简单的,只要安装官方的文档来就不会出错!</p>
+:ET

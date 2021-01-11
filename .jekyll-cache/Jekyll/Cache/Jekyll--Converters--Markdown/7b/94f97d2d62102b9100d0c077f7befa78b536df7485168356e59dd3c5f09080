@@ -1,0 +1,45 @@
+I"O<h1 id="前言">前言</h1>
+
+<blockquote>
+  <p>在Redis Desktop Manager(RDM) 官网上已经不提供0.9.x版本之后的Mac dmg包了,官方给我们的选择是要么付费订阅,要么自己手动编译(有条件的同学可以付费支持一下,毕竟开源不容易!).在之前我写了一篇通过源码编译RDM的教程,但编译的时候是忽略掉crashreporter这个依赖的(感觉这个没啥太大用处),为了不上之前的坑,特地在写一篇编译crashreporter的教程.</p>
+</blockquote>
+
+<h2 id="第一步下载crashreporter源码">第一步,下载crashreporter源码</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">git clone https://github.com/RedisDesktop/CrashReporter.git</code></li>
+</ul>
+
+<h2 id="第二步配置qt">第二步,配置QT</h2>
+
+<ul>
+  <li>
+    <p>选择release</p>
+  </li>
+  <li>
+    <p>配置QT编译参数,在额外参数里面加上<code class="language-plaintext highlighter-rouge">DESTDIR+=.</code>,构建目录随你心情了.</p>
+
+    <p><img src="https://gitee.com/oneww/onew_image/raw/master/mac_compile_crash_config.png" alt="images" /></p>
+  </li>
+  <li>
+    <p>修改 <code class="language-plaintext highlighter-rouge">Sources\src\main.cpp</code>中的代码,因为有些变量没有定义,所以会导致编译不通过,需要手动定义一下变量</p>
+
+    <p><img src="https://gitee.com/oneww/onew_image/raw/master/mac_compile_crash_main.png" alt="images" />在mian函数上添加以下代码:</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+* 这些变量的值,都可以瞎写!
+*/</span>
+<span class="k">static</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">APP_NAME</span> <span class="o">=</span> <span class="s">"RDM_CARSH_REPORTER"</span><span class="p">;</span>
+<span class="k">static</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">APP_VERSION</span> <span class="o">=</span> <span class="s">"0.9.5"</span><span class="p">;</span>
+<span class="k">static</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">CRASH_SERVER_URL</span> <span class="o">=</span> <span class="s">"https://www.baidu.com"</span><span class="p">;</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>点击构建,构建完成之后你就会在你的构建目录中看到一个,crashreporter的二进制文件,ok.完成了.</p>
+  </li>
+</ul>
+
+<h1 id="总结">总结</h1>
+
+<p>在之前对QT熟悉的时候,老是编译不出来,各种报错,差点就要放弃了,还一度的以为官方是为了收费故意刁难我的.结果是自己对这个不熟.哈哈哈.摸熟了就好了(虽然我不是搞QT的,慢慢摸索还是能看点门道出来!).还是前言中的话,如果有条件的同学,请多多支持一下官方.另外,编译好的RDM dmg我已经放在<a href="https://github.com/onewe/RedisDesktopManager-Mac">github</a>上了,不想编译的话可以下载来用用.想编译的同学可以参考我另一篇<a href="https://onew.me/2018/03/29/mac-compile-RDM/">Mac OS X下编译Redis Desktop Manager(RDM)</a>.</p>
+:ET

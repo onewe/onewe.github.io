@@ -1,0 +1,1571 @@
+I"��<h1 id="一前言">一、前言</h1>
+
+<p>​	最近有小朋友在学习spring boot的时候遇到了一个问题,按照教程上操作始终是404.于是就百事不得其解.问我的时候,我也一脸蒙B,毕竟jsp这玩意儿好久都没碰到过了,之前碰jsp的时候还是在ssh的时候.</p>
+
+<p>​	既然遇到问题就来分析一下呗,趁着最近在看spring的源码.</p>
+
+<h1 id="二案发现场">二、案发现场</h1>
+
+<p>ymal:</p>
+
+<div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">server</span><span class="pi">:</span>
+  <span class="na">port</span><span class="pi">:</span> <span class="m">9090</span>
+<span class="na">spring</span><span class="pi">:</span>
+  <span class="na">mvc</span><span class="pi">:</span>
+    <span class="na">view</span><span class="pi">:</span>
+      <span class="na">prefix</span><span class="pi">:</span> <span class="s">/WEB-INF/jsp/</span>
+      <span class="na">suffix</span><span class="pi">:</span> <span class="s">.jsp</span>
+</code></pre></div></div>
+
+<p>pom:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nt">&lt;dependencies&gt;</span>
+        <span class="nt">&lt;dependency&gt;</span>
+            <span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+            <span class="nt">&lt;artifactId&gt;</span>spring-boot-starter-aop<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;/dependency&gt;</span>
+        <span class="nt">&lt;dependency&gt;</span>
+            <span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+            <span class="nt">&lt;artifactId&gt;</span>spring-boot-starter-web<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;/dependency&gt;</span>
+        <span class="nt">&lt;dependency&gt;</span>
+            <span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+            <span class="nt">&lt;artifactId&gt;</span>spring-boot-starter-test<span class="nt">&lt;/artifactId&gt;</span>
+            <span class="nt">&lt;scope&gt;</span>test<span class="nt">&lt;/scope&gt;</span>
+        <span class="nt">&lt;/dependency&gt;</span>
+        <span class="nt">&lt;dependency&gt;</span>
+            <span class="nt">&lt;groupId&gt;</span>org.apache.tomcat.embed<span class="nt">&lt;/groupId&gt;</span>
+            <span class="nt">&lt;artifactId&gt;</span>tomcat-embed-jasper<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;/dependency&gt;</span>
+        <span class="nt">&lt;dependency&gt;</span>
+            <span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+            <span class="nt">&lt;artifactId&gt;</span>spring-boot-starter-tomcat<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;/dependency&gt;</span>
+        <span class="nt">&lt;dependency&gt;</span>
+            <span class="nt">&lt;groupId&gt;</span>javax.servlet<span class="nt">&lt;/groupId&gt;</span>
+            <span class="nt">&lt;artifactId&gt;</span>jstl<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;/dependency&gt;</span>
+    <span class="nt">&lt;/dependencies&gt;</span>
+
+    <span class="nt">&lt;build&gt;</span>
+        <span class="nt">&lt;plugins&gt;</span>
+            <span class="nt">&lt;plugin&gt;</span>
+                <span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+                <span class="nt">&lt;artifactId&gt;</span>spring-boot-maven-plugin<span class="nt">&lt;/artifactId&gt;</span>
+            <span class="nt">&lt;/plugin&gt;</span>
+        <span class="nt">&lt;/plugins&gt;</span>
+
+    <span class="nt">&lt;/build&gt;</span>
+</code></pre></div></div>
+
+<p>代码:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Controller</span>
+<span class="nd">@EnableAutoConfiguration</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">App</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">SpringApplication</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="nc">App</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="n">args</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">"/test"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">test</span><span class="o">(){</span>
+        <span class="k">return</span> <span class="s">"index"</span><span class="o">;</span>
+    <span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	按照以上代码,应该是没有什么问题的,毕竟人家的教程也是这么做的,只不过别人是用eclipse,他是用的idea罢了.我也懒得去分析为啥eclipse没得问题了,直接来看看为啥会有这个问题.</p>
+
+<h1 id="三分析">三、分析</h1>
+
+<p>​	众所周知,spring boot只是在spring上面包了一层皮,里面还是利用了spring的一些机制来完成,当然加载自动化配置,开箱即用,感觉很智能.</p>
+
+<p>​	springboot为我们开发者省去了很多配置上的麻烦,大部分都默认配置好了,但是虽然便利了开发者,但也带来了一些麻烦,就如这个问题,整个日子输出窗口都没有日志显示为啥会是404,文件明明在那,为啥会找不到呢?</p>
+
+<p>​	要解决这个问题,就要从springBoot的自动配置上入手.按照上面的配置,用的是嵌入式的tomcat,那么就从tomcat的配置开始.</p>
+
+<h2 id="31-servletwebserverfactoryconfiguration">3.1 ServletWebServerFactoryConfiguration</h2>
+
+<p>​	当使用springboot的wen功能的时候,有个关键的配置就避免不了了,代码如下:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+<span class="kd">class</span> <span class="nc">ServletWebServerFactoryConfiguration</span> <span class="o">{</span>
+  
+		<span class="c1">// 判断classpath是否存在 Servlet,Tomcat,UpgradeProtocol类</span>
+   <span class="c1">// 如果存在就启用此配置</span>
+   <span class="c1">// 当然还要 ServletWebServerFactory 期子类没有 在容器中</span>
+   <span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+   <span class="nd">@ConditionalOnClass</span><span class="o">({</span> <span class="nc">Servlet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Tomcat</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">UpgradeProtocol</span><span class="o">.</span><span class="na">class</span> <span class="o">})</span>
+   <span class="nd">@ConditionalOnMissingBean</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="nc">ServletWebServerFactory</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">search</span> <span class="o">=</span> <span class="nc">SearchStrategy</span><span class="o">.</span><span class="na">CURRENT</span><span class="o">)</span>
+   <span class="kd">static</span> <span class="kd">class</span> <span class="nc">EmbeddedTomcat</span> <span class="o">{</span>
+
+      <span class="nd">@Bean</span>
+      <span class="nc">TomcatServletWebServerFactory</span> <span class="nf">tomcatServletWebServerFactory</span><span class="o">(</span>
+            <span class="nc">ObjectProvider</span><span class="o">&lt;</span><span class="nc">TomcatConnectorCustomizer</span><span class="o">&gt;</span> <span class="n">connectorCustomizers</span><span class="o">,</span>
+            <span class="nc">ObjectProvider</span><span class="o">&lt;</span><span class="nc">TomcatContextCustomizer</span><span class="o">&gt;</span> <span class="n">contextCustomizers</span><span class="o">,</span>
+            <span class="nc">ObjectProvider</span><span class="o">&lt;</span><span class="nc">TomcatProtocolHandlerCustomizer</span><span class="o">&lt;?&gt;&gt;</span> <span class="n">protocolHandlerCustomizers</span><span class="o">)</span> <span class="o">{</span>
+         <span class="c1">// 创建tomcat 工厂</span>
+         <span class="nc">TomcatServletWebServerFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TomcatServletWebServerFactory</span><span class="o">();</span>
+         <span class="n">factory</span><span class="o">.</span><span class="na">getTomcatConnectorCustomizers</span><span class="o">()</span>
+               <span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">connectorCustomizers</span><span class="o">.</span><span class="na">orderedStream</span><span class="o">().</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">()));</span>
+         <span class="n">factory</span><span class="o">.</span><span class="na">getTomcatContextCustomizers</span><span class="o">()</span>
+               <span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">contextCustomizers</span><span class="o">.</span><span class="na">orderedStream</span><span class="o">().</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">()));</span>
+         <span class="n">factory</span><span class="o">.</span><span class="na">getTomcatProtocolHandlerCustomizers</span><span class="o">()</span>
+               <span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">protocolHandlerCustomizers</span><span class="o">.</span><span class="na">orderedStream</span><span class="o">().</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">()));</span>
+         <span class="k">return</span> <span class="n">factory</span><span class="o">;</span>
+      <span class="o">}</span>
+
+   <span class="o">}</span>
+
+   <span class="cm">/**
+    * Nested configuration if Jetty is being used.
+    * 同tomcat的逻辑
+    */</span>
+   <span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+   <span class="nd">@ConditionalOnClass</span><span class="o">({</span> <span class="nc">Servlet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Server</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Loader</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">WebAppContext</span><span class="o">.</span><span class="na">class</span> <span class="o">})</span>
+   <span class="nd">@ConditionalOnMissingBean</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="nc">ServletWebServerFactory</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">search</span> <span class="o">=</span> <span class="nc">SearchStrategy</span><span class="o">.</span><span class="na">CURRENT</span><span class="o">)</span>
+   <span class="kd">static</span> <span class="kd">class</span> <span class="nc">EmbeddedJetty</span> <span class="o">{</span>
+
+      <span class="nd">@Bean</span>
+      <span class="nc">JettyServletWebServerFactory</span> <span class="nf">JettyServletWebServerFactory</span><span class="o">(</span>
+            <span class="nc">ObjectProvider</span><span class="o">&lt;</span><span class="nc">JettyServerCustomizer</span><span class="o">&gt;</span> <span class="n">serverCustomizers</span><span class="o">)</span> <span class="o">{</span>
+         <span class="nc">JettyServletWebServerFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">JettyServletWebServerFactory</span><span class="o">();</span>
+         <span class="n">factory</span><span class="o">.</span><span class="na">getServerCustomizers</span><span class="o">().</span><span class="na">addAll</span><span class="o">(</span><span class="n">serverCustomizers</span><span class="o">.</span><span class="na">orderedStream</span><span class="o">().</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">()));</span>
+         <span class="k">return</span> <span class="n">factory</span><span class="o">;</span>
+      <span class="o">}</span>
+
+   <span class="o">}</span>
+
+   <span class="cm">/**
+    * Nested configuration if Undertow is being used.
+    * 同tomcat的逻辑
+    */</span>
+   <span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+   <span class="nd">@ConditionalOnClass</span><span class="o">({</span> <span class="nc">Servlet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">Undertow</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nc">SslClientAuthMode</span><span class="o">.</span><span class="na">class</span> <span class="o">})</span>
+   <span class="nd">@ConditionalOnMissingBean</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="nc">ServletWebServerFactory</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">search</span> <span class="o">=</span> <span class="nc">SearchStrategy</span><span class="o">.</span><span class="na">CURRENT</span><span class="o">)</span>
+   <span class="kd">static</span> <span class="kd">class</span> <span class="nc">EmbeddedUndertow</span> <span class="o">{</span>
+
+      <span class="nd">@Bean</span>
+      <span class="nc">UndertowServletWebServerFactory</span> <span class="nf">undertowServletWebServerFactory</span><span class="o">(</span>
+            <span class="nc">ObjectProvider</span><span class="o">&lt;</span><span class="nc">UndertowDeploymentInfoCustomizer</span><span class="o">&gt;</span> <span class="n">deploymentInfoCustomizers</span><span class="o">,</span>
+            <span class="nc">ObjectProvider</span><span class="o">&lt;</span><span class="nc">UndertowBuilderCustomizer</span><span class="o">&gt;</span> <span class="n">builderCustomizers</span><span class="o">)</span> <span class="o">{</span>
+         <span class="nc">UndertowServletWebServerFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">UndertowServletWebServerFactory</span><span class="o">();</span>
+         <span class="n">factory</span><span class="o">.</span><span class="na">getDeploymentInfoCustomizers</span><span class="o">()</span>
+               <span class="o">.</span><span class="na">addAll</span><span class="o">(</span><span class="n">deploymentInfoCustomizers</span><span class="o">.</span><span class="na">orderedStream</span><span class="o">().</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">()));</span>
+         <span class="n">factory</span><span class="o">.</span><span class="na">getBuilderCustomizers</span><span class="o">().</span><span class="na">addAll</span><span class="o">(</span><span class="n">builderCustomizers</span><span class="o">.</span><span class="na">orderedStream</span><span class="o">().</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">()));</span>
+         <span class="k">return</span> <span class="n">factory</span><span class="o">;</span>
+      <span class="o">}</span>
+
+   <span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这里可以看到,配置类按照classpath中的类创建了不同的<code class="language-plaintext highlighter-rouge">ServletWebServerFactory</code>,本文这里加入了tomcat,所以这里将会创建<code class="language-plaintext highlighter-rouge">TomcatServletWebServerFactory</code>.</p>
+
+<p>​	当然光看这个还是不行的,要明白为啥会这么创建,那么这一切要从springboot的启动流程开始分析才能解释整个情况.</p>
+
+<h1 id="四springboot启动流程分析">四、SpringBoot启动流程分析</h1>
+
+<p>​	太阳底下无新鲜事,来揭开名为方便的面纱.当然这只是初步的探讨.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@EnableAutoConfiguration</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">SpringApplication</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="nc">Main</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="n">args</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	熟悉springBoot的人看到这样的写法是否是感到平淡无奇?那么这短短的一行代码后面到底发生了啥??</p>
+
+<h2 id="41-springapplicationrun">4.1 SpringApplication.run</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="nc">ConfigurableApplicationContext</span> <span class="nf">run</span><span class="o">(</span><span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">primarySource</span><span class="o">,</span> <span class="nc">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="nf">run</span><span class="o">(</span><span class="k">new</span> <span class="nc">Class</span><span class="o">&lt;?&gt;[]</span> <span class="o">{</span> <span class="n">primarySource</span> <span class="o">},</span> <span class="n">args</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="kd">public</span> <span class="kd">static</span> <span class="nc">ConfigurableApplicationContext</span> <span class="nf">run</span><span class="o">(</span><span class="nc">Class</span><span class="o">&lt;?&gt;[]</span> <span class="n">primarySources</span><span class="o">,</span> <span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="k">new</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="n">primarySources</span><span class="o">).</span><span class="na">run</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	创建了个<code class="language-plaintext highlighter-rouge">SpringApplication</code>对象在run？看看构造函数是否有啥逻辑.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="nc">Class</span><span class="o">&lt;?&gt;...</span> <span class="n">primarySources</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">primarySources</span><span class="o">);</span>
+	<span class="o">}</span>
+<span class="kd">public</span> <span class="nf">SpringApplication</span><span class="o">(</span><span class="nc">ResourceLoader</span> <span class="n">resourceLoader</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;?&gt;...</span> <span class="n">primarySources</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">resourceLoader</span> <span class="o">=</span> <span class="n">resourceLoader</span><span class="o">;</span>
+		<span class="nc">Assert</span><span class="o">.</span><span class="na">notNull</span><span class="o">(</span><span class="n">primarySources</span><span class="o">,</span> <span class="s">"PrimarySources must not be null"</span><span class="o">);</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">primarySources</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedHashSet</span><span class="o">&lt;&gt;(</span><span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">primarySources</span><span class="o">));</span>
+		<span class="c1">// 判断 web 应用的类型</span>
+		<span class="c1">// 判断依据为 是否存在指定 DispatcherServlet,DispatcherHandler,ServletContainer,WebApplicationContext,ReactiveWebApplicationContext等类</span>
+		<span class="c1">// 使用 class.forName 进行查找</span>
+  	<span class="c1">// 判断spring程序的类型</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">webApplicationType</span> <span class="o">=</span> <span class="nc">WebApplicationType</span><span class="o">.</span><span class="na">deduceFromClasspath</span><span class="o">();</span>
+		<span class="c1">// 加载 META-INF/spring.factories 配置文件,并把 ApplicationContextInitializer 相关的类全部实例化</span>
+		<span class="n">setInitializers</span><span class="o">((</span><span class="nc">Collection</span><span class="o">)</span> <span class="n">getSpringFactoriesInstances</span><span class="o">(</span><span class="nc">ApplicationContextInitializer</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+		<span class="c1">// 加载 META-INF/spring.factories 配置文件,并把 ApplicationListener 相关的类 全部实例化</span>
+		<span class="n">setListeners</span><span class="o">((</span><span class="nc">Collection</span><span class="o">)</span> <span class="n">getSpringFactoriesInstances</span><span class="o">(</span><span class="nc">ApplicationListener</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+		<span class="c1">// 检查 main 方法所在的类</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">mainApplicationClass</span> <span class="o">=</span> <span class="n">deduceMainApplicationClass</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	在构造的时候还是做了不少的逻辑,这里就不得不提一下spring的黑魔法了,那就是<code class="language-plaintext highlighter-rouge">SpringFactoriesLoader</code>,这个东西有点像java中的spi机制,与之不同是spring是读取的是<code class="language-plaintext highlighter-rouge">META-INF/spring.factories</code>文件.至于为啥不用spi要自己单搞个,emmmmmm.</p>
+
+<p>​	构造的逻辑很简单,不是很复杂,就是检测一下要启动什么类型的spring,具体操作是在<code class="language-plaintext highlighter-rouge">WebApplicationType.deduceFromClasspath();</code>,这个类型判断还是很重要的,后面创建spring上下文的时候会用得上.</p>
+
+<h2 id="42-springapplicationrun">4.2 springApplication.run</h2>
+
+<p>​	对象创建好了,又要继续run了.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="nc">ConfigurableApplicationContext</span> <span class="nf">run</span><span class="o">(</span><span class="nc">String</span><span class="o">...</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// 创建一个用于记录 启动-关闭 时间的 StopWatch</span>
+		<span class="nc">StopWatch</span> <span class="n">stopWatch</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">StopWatch</span><span class="o">();</span>
+		<span class="n">stopWatch</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+		<span class="nc">ConfigurableApplicationContext</span> <span class="n">context</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+		<span class="nc">Collection</span><span class="o">&lt;</span><span class="nc">SpringBootExceptionReporter</span><span class="o">&gt;</span> <span class="n">exceptionReporters</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+		<span class="c1">// 设置环境变量</span>
+		<span class="n">configureHeadlessProperty</span><span class="o">();</span>
+		<span class="c1">// 创建 EventPublishingRunListener</span>
+		<span class="c1">// 相当于是个组合模式,所有listener 都集中在 SpringApplicationRunListeners 中</span>
+		<span class="nc">SpringApplicationRunListeners</span> <span class="n">listeners</span> <span class="o">=</span> <span class="n">getRunListeners</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+		<span class="c1">// 启动容器,发送时间</span>
+		<span class="n">listeners</span><span class="o">.</span><span class="na">starting</span><span class="o">();</span>
+		<span class="k">try</span> <span class="o">{</span>
+			<span class="c1">// 把 args 封装为对象,映射到环境中</span>
+			<span class="nc">ApplicationArguments</span> <span class="n">applicationArguments</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DefaultApplicationArguments</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+			<span class="c1">// 初始化环境</span>
+			<span class="nc">ConfigurableEnvironment</span> <span class="n">environment</span> <span class="o">=</span> <span class="n">prepareEnvironment</span><span class="o">(</span><span class="n">listeners</span><span class="o">,</span> <span class="n">applicationArguments</span><span class="o">);</span>
+			<span class="c1">// 设置环境变量 spring.beaninfo.ignore</span>
+			<span class="n">configureIgnoreBeanInfo</span><span class="o">(</span><span class="n">environment</span><span class="o">);</span>
+			<span class="c1">// 获取 需要打印的 Banner 并把 banner 打印到控制台</span>
+			<span class="nc">Banner</span> <span class="n">printedBanner</span> <span class="o">=</span> <span class="n">printBanner</span><span class="o">(</span><span class="n">environment</span><span class="o">);</span>
+      
+      
+			<span class="c1">// 根据不同的类型 创建不同的上下文</span>
+			<span class="n">context</span> <span class="o">=</span> <span class="n">createApplicationContext</span><span class="o">();</span>
+      
+      
+			<span class="c1">// 获取 所有 SpringBootExceptionReporter 相关的类</span>
+			<span class="n">exceptionReporters</span> <span class="o">=</span> <span class="n">getSpringFactoriesInstances</span><span class="o">(</span><span class="nc">SpringBootExceptionReporter</span><span class="o">.</span><span class="na">class</span><span class="o">,</span>
+					<span class="k">new</span> <span class="nc">Class</span><span class="o">[]</span> <span class="o">{</span> <span class="nc">ConfigurableApplicationContext</span><span class="o">.</span><span class="na">class</span> <span class="o">},</span> <span class="n">context</span><span class="o">);</span>
+			<span class="c1">// 准备上下文</span>
+			<span class="n">prepareContext</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">environment</span><span class="o">,</span> <span class="n">listeners</span><span class="o">,</span> <span class="n">applicationArguments</span><span class="o">,</span> <span class="n">printedBanner</span><span class="o">);</span>
+      
+      
+      
+			<span class="c1">// 刷新上下文,发送事件</span>
+			<span class="n">refreshContext</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+      
+      
+			<span class="c1">// 模板方法</span>
+			<span class="n">afterRefresh</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">applicationArguments</span><span class="o">);</span>
+			<span class="c1">// 停止</span>
+			<span class="n">stopWatch</span><span class="o">.</span><span class="na">stop</span><span class="o">();</span>
+			<span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">logStartupInfo</span><span class="o">)</span> <span class="o">{</span>
+				<span class="k">new</span> <span class="nf">StartupInfoLogger</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">mainApplicationClass</span><span class="o">).</span><span class="na">logStarted</span><span class="o">(</span><span class="n">getApplicationLog</span><span class="o">(),</span> <span class="n">stopWatch</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="c1">// 通知监听器,已经启动</span>
+			<span class="n">listeners</span><span class="o">.</span><span class="na">started</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+			<span class="c1">// 调用 runner的 run 方法</span>
+			<span class="n">callRunners</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">applicationArguments</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">Throwable</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// 处理运行时的错误</span>
+			<span class="n">handleRunFailure</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">ex</span><span class="o">,</span> <span class="n">exceptionReporters</span><span class="o">,</span> <span class="n">listeners</span><span class="o">);</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+
+		<span class="k">try</span> <span class="o">{</span>
+			<span class="c1">// 通知监听器,正在运行</span>
+			<span class="n">listeners</span><span class="o">.</span><span class="na">running</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">Throwable</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// 处理运行时的错误</span>
+			<span class="n">handleRunFailure</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">ex</span><span class="o">,</span> <span class="n">exceptionReporters</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="c1">// 返回上下文</span>
+		<span class="k">return</span> <span class="n">context</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	由于本文不是分析代码的文章,所以关注点放在创建spring上下文和上下文的操作上.分别是<code class="language-plaintext highlighter-rouge">createApplicationContext</code>和<code class="language-plaintext highlighter-rouge">refreshContext</code></p>
+
+<h2 id="43-createapplicationcontext">4.3 createApplicationContext</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">ConfigurableApplicationContext</span> <span class="nf">createApplicationContext</span><span class="o">()</span> <span class="o">{</span>
+		<span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">contextClass</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">applicationContextClass</span><span class="o">;</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">contextClass</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="k">switch</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">webApplicationType</span><span class="o">)</span> <span class="o">{</span>
+				<span class="k">case</span> <span class="nl">SERVLET:</span>
+					<span class="n">contextClass</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="no">DEFAULT_SERVLET_WEB_CONTEXT_CLASS</span><span class="o">);</span>
+					<span class="k">break</span><span class="o">;</span>
+				<span class="k">case</span> <span class="nl">REACTIVE:</span>
+					<span class="n">contextClass</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="no">DEFAULT_REACTIVE_WEB_CONTEXT_CLASS</span><span class="o">);</span>
+					<span class="k">break</span><span class="o">;</span>
+				<span class="k">default</span><span class="o">:</span>
+					<span class="n">contextClass</span> <span class="o">=</span> <span class="nc">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="no">DEFAULT_CONTEXT_CLASS</span><span class="o">);</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+			<span class="k">catch</span> <span class="o">(</span><span class="nc">ClassNotFoundException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+				<span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span>
+						<span class="s">"Unable create a default ApplicationContext, please specify an ApplicationContextClass"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="o">(</span><span class="nc">ConfigurableApplicationContext</span><span class="o">)</span> <span class="nc">BeanUtils</span><span class="o">.</span><span class="na">instantiateClass</span><span class="o">(</span><span class="n">contextClass</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这里的类型,是按照之前构造方法中的类型进行创建的,如果不清楚的可以往上翻一哈.</p>
+
+<ol>
+  <li>如果类型为: SERVLET 就创建 AnnotationConfigServletWebServerApplicationContext</li>
+  <li>如果类型为: REACTIVE 就创建 AnnotationConfigReactiveWebServerApplicationContext</li>
+  <li>默认创建 : AnnotationConfigApplicationContext</li>
+</ol>
+
+<p>​	很显然这里的类型是 SERVLET 所以创建了 AnnotationConfigServletWebServerApplicationContext,继承关系如下.</p>
+
+<p><img src="https://gitee.com/oneww/onew_image/raw/master/AnnotationConfigServletWebServerApplicationContext.png" alt="images" /></p>
+
+<p>​	熟悉spring的同学是不是感觉与<code class="language-plaintext highlighter-rouge">ClassPathXmlApplicationContext</code>差不多？我觉得是差不多的,只是干事的方式有点区别.</p>
+
+<p>​	这里把对象创建完了,然后进行一顿骚操作,设置值,环境等等.不再这里进行分析.要看的关键点是<code class="language-plaintext highlighter-rouge">refreshContext</code>.</p>
+
+<h2 id="45-refreshcontext">4.5 refreshContext</h2>
+
+<p>​	刷新上下文,这里刷新会有什么骚操作呢?来瞧瞧就知道了.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">refreshContext</span><span class="o">(</span><span class="nc">ConfigurableApplicationContext</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+		<span class="n">refresh</span><span class="o">((</span><span class="nc">ApplicationContext</span><span class="o">)</span> <span class="n">context</span><span class="o">);</span>
+		<span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">registerShutdownHook</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="c1">// 添加关闭钩子,关闭程序时,关闭上下文 释放资源</span>
+				<span class="n">context</span><span class="o">.</span><span class="na">registerShutdownHook</span><span class="o">();</span>
+			<span class="o">}</span>
+			<span class="k">catch</span> <span class="o">(</span><span class="nc">AccessControlException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+				<span class="c1">// Not allowed in some environments.</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	添加钩子这个可以不用管,不影响逻辑.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Deprecated</span>
+	<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">refresh</span><span class="o">(</span><span class="nc">ApplicationContext</span> <span class="n">applicationContext</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">Assert</span><span class="o">.</span><span class="na">isInstanceOf</span><span class="o">(</span><span class="nc">ConfigurableApplicationContext</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">applicationContext</span><span class="o">);</span>
+		<span class="n">refresh</span><span class="o">((</span><span class="nc">ConfigurableApplicationContext</span><span class="o">)</span> <span class="n">applicationContext</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	虽然这个方法过时,但spring还是没有直接删除,真够良心的,不像某Final,直接删,真TMSB.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">refresh</span><span class="o">(</span><span class="nc">ConfigurableApplicationContext</span> <span class="n">applicationContext</span><span class="o">)</span> <span class="o">{</span>
+		<span class="n">applicationContext</span><span class="o">.</span><span class="na">refresh</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	注意这里的context 实际上是<code class="language-plaintext highlighter-rouge">AnnotationConfigServletWebServerApplicationContext</code>,而<code class="language-plaintext highlighter-rouge">AnnotationConfigServletWebServerApplicationContext</code>没有重写这个方法,是继承的它父类<code class="language-plaintext highlighter-rouge">ServletWebServerApplicationContext</code>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// ServletWebServerApplicationContext</span>
+<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="kd">final</span> <span class="kt">void</span> <span class="nf">refresh</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">BeansException</span><span class="o">,</span> <span class="nc">IllegalStateException</span> <span class="o">{</span>
+		<span class="k">try</span> <span class="o">{</span>
+			<span class="kd">super</span><span class="o">.</span><span class="na">refresh</span><span class="o">();</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">RuntimeException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="n">stopAndReleaseWebServer</span><span class="o">();</span>
+			<span class="k">throw</span> <span class="n">ex</span><span class="o">;</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	<code class="language-plaintext highlighter-rouge">ServletWebServerApplicationContext</code>的父类是<code class="language-plaintext highlighter-rouge">AbstractApplicationContext</code></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// AbstractApplicationContext</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">refresh</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">BeansException</span><span class="o">,</span> <span class="nc">IllegalStateException</span> <span class="o">{</span>
+		<span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">startupShutdownMonitor</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// Prepare this context for refreshing.</span>
+			<span class="c1">// 准备刷新上下文环境</span>
+			<span class="n">prepareRefresh</span><span class="o">();</span>
+
+			<span class="c1">// Tell the subclass to refresh the internal bean factory.</span>
+			<span class="c1">// 初始化beanFactory,进行xml预读取</span>
+			<span class="nc">ConfigurableListableBeanFactory</span> <span class="n">beanFactory</span> <span class="o">=</span> <span class="n">obtainFreshBeanFactory</span><span class="o">();</span>
+
+			<span class="c1">// Prepare the bean factory for use in this context.</span>
+			<span class="c1">// 对beanFactory进行填充</span>
+			<span class="n">prepareBeanFactory</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="c1">// Allows post-processing of the bean factory in context subclasses.</span>
+				<span class="c1">// 子类覆盖方法做额外的处理</span>
+				<span class="n">postProcessBeanFactory</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+				<span class="c1">// Invoke factory processors registered as beans in the context.</span>
+				<span class="c1">// 激活各种beanFactoryProcessors</span>
+				<span class="n">invokeBeanFactoryPostProcessors</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+				<span class="c1">// Register bean processors that intercept bean creation.</span>
+				<span class="c1">//注册拦截bean创建的bean处理器</span>
+				<span class="n">registerBeanPostProcessors</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+				<span class="c1">// Initialize message source for this context.</span>
+				<span class="c1">// 初始化上下文的消息源</span>
+				<span class="n">initMessageSource</span><span class="o">();</span>
+
+				<span class="c1">// Initialize event multicaster for this context.</span>
+				<span class="c1">// 初始化上下文的消息广播</span>
+				<span class="n">initApplicationEventMulticaster</span><span class="o">();</span>
+
+				<span class="c1">// Initialize other special beans in specific context subclasses.</span>
+				<span class="c1">// 留给子类来初始化其他的bean</span>
+				<span class="n">onRefresh</span><span class="o">();</span>
+
+				<span class="c1">// Check for listener beans and register them.</span>
+				<span class="c1">// 注册所有bean的监听器</span>
+				<span class="n">registerListeners</span><span class="o">();</span>
+
+				<span class="c1">// Instantiate all remaining (non-lazy-init) singletons.</span>
+				<span class="c1">// 初始化延迟加载的bean</span>
+				<span class="n">finishBeanFactoryInitialization</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+
+				<span class="c1">// Last step: publish corresponding event.</span>
+				<span class="c1">// 最后一步,发布消息</span>
+				<span class="n">finishRefresh</span><span class="o">();</span>
+			<span class="o">}</span>
+
+			<span class="k">catch</span> <span class="o">(</span><span class="nc">BeansException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isWarnEnabled</span><span class="o">())</span> <span class="o">{</span>
+					<span class="n">logger</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">"Exception encountered during context initialization - "</span> <span class="o">+</span>
+							<span class="s">"cancelling refresh attempt: "</span> <span class="o">+</span> <span class="n">ex</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="c1">//发生异常,销毁所有bean</span>
+				<span class="c1">// Destroy already created singletons to avoid dangling resources.</span>
+				<span class="n">destroyBeans</span><span class="o">();</span>
+
+				<span class="c1">// Reset 'active' flag.</span>
+				<span class="c1">// 重置flag</span>
+				<span class="n">cancelRefresh</span><span class="o">(</span><span class="n">ex</span><span class="o">);</span>
+
+				<span class="c1">// Propagate exception to caller.</span>
+				<span class="k">throw</span> <span class="n">ex</span><span class="o">;</span>
+			<span class="o">}</span>
+
+			<span class="k">finally</span> <span class="o">{</span>
+				<span class="c1">// Reset common introspection caches in Spring's core, since we</span>
+				<span class="c1">// might not ever need metadata for singleton beans anymore...</span>
+				<span class="c1">// 重置缓存</span>
+				<span class="n">resetCommonCaches</span><span class="o">();</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这里的重点是<code class="language-plaintext highlighter-rouge">onRefresh</code>,这里<code class="language-plaintext highlighter-rouge">onRefresh</code>是由子类<code class="language-plaintext highlighter-rouge">ServletWebServerApplicationContext</code>进行实现的.</p>
+
+<h2 id="46-onrefresh">4.6 onRefresh</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// ServletWebServerApplicationContext</span>
+	<span class="nd">@Override</span>
+	<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onRefresh</span><span class="o">()</span> <span class="o">{</span>
+		<span class="kd">super</span><span class="o">.</span><span class="na">onRefresh</span><span class="o">();</span>
+		<span class="k">try</span> <span class="o">{</span>
+		<span class="c1">// 创建server</span>
+			<span class="n">createWebServer</span><span class="o">();</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">Throwable</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">ApplicationContextException</span><span class="o">(</span><span class="s">"Unable to start web server"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	终于绕到了创建 server 这里了,不知少侠是否还记得那个配置类??<code class="language-plaintext highlighter-rouge">ServletWebServerFactoryConfiguration</code>.那么现在才真正的开始了.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">createWebServer</span><span class="o">()</span> <span class="o">{</span>
+		<span class="nc">WebServer</span> <span class="n">webServer</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">webServer</span><span class="o">;</span>
+  	<span class="c1">// 获取servlet 上下文</span>
+		<span class="nc">ServletContext</span> <span class="n">servletContext</span> <span class="o">=</span> <span class="n">getServletContext</span><span class="o">();</span>
+    <span class="c1">// 如果 server 为空 或者 servlet上下文为空,就创建server</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">webServer</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">servletContext</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">ServletWebServerFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="n">getWebServerFactory</span><span class="o">();</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">webServer</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="na">getWebServer</span><span class="o">(</span><span class="n">getSelfInitializer</span><span class="o">());</span>
+		<span class="o">}</span>
+		<span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">servletContext</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="n">getSelfInitializer</span><span class="o">().</span><span class="na">onStartup</span><span class="o">(</span><span class="n">servletContext</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="k">catch</span> <span class="o">(</span><span class="nc">ServletException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+				<span class="k">throw</span> <span class="k">new</span> <span class="nf">ApplicationContextException</span><span class="o">(</span><span class="s">"Cannot initialize servlet context"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="n">initPropertySources</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<ol>
+  <li>判断server是否创建</li>
+  <li>未创建就创建</li>
+  <li>初始化</li>
+  <li>初始化资源</li>
+</ol>
+
+<p>​	这里的 <code class="language-plaintext highlighter-rouge">getWebServerFactory()</code> 方法从容器中获取的,容器里面的是之前配置类中创建的.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 从容器中获取 ServletWebServerFactory</span>
+<span class="kd">protected</span> <span class="nc">ServletWebServerFactory</span> <span class="nf">getWebServerFactory</span><span class="o">()</span> <span class="o">{</span>
+		<span class="c1">// Use bean names so that we don't consider the hierarchy</span>
+		<span class="nc">String</span><span class="o">[]</span> <span class="n">beanNames</span> <span class="o">=</span> <span class="n">getBeanFactory</span><span class="o">().</span><span class="na">getBeanNamesForType</span><span class="o">(</span><span class="nc">ServletWebServerFactory</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">beanNames</span><span class="o">.</span><span class="na">length</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">ApplicationContextException</span><span class="o">(</span><span class="s">"Unable to start ServletWebServerApplicationContext due to missing "</span>
+					<span class="o">+</span> <span class="s">"ServletWebServerFactory bean."</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">beanNames</span><span class="o">.</span><span class="na">length</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">ApplicationContextException</span><span class="o">(</span><span class="s">"Unable to start ServletWebServerApplicationContext due to multiple "</span>
+					<span class="o">+</span> <span class="s">"ServletWebServerFactory beans : "</span> <span class="o">+</span> <span class="nc">StringUtils</span><span class="o">.</span><span class="na">arrayToCommaDelimitedString</span><span class="o">(</span><span class="n">beanNames</span><span class="o">));</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="nf">getBeanFactory</span><span class="o">().</span><span class="na">getBean</span><span class="o">(</span><span class="n">beanNames</span><span class="o">[</span><span class="mi">0</span><span class="o">],</span> <span class="nc">ServletWebServerFactory</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<h1 id="五tomcat的创建">五、tomcat的创建</h1>
+
+<p>​	前面千辛万苦的获取到了 tomcatServer的工厂,接下来就看看是怎么创建的吧.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory</span>
+<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nc">WebServer</span> <span class="nf">getWebServer</span><span class="o">(</span><span class="nc">ServletContextInitializer</span><span class="o">...</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// .. 省略</span>
+    <span class="c1">// 初始化</span>
+		<span class="n">prepareContext</span><span class="o">(</span><span class="n">tomcat</span><span class="o">.</span><span class="na">getHost</span><span class="o">(),</span> <span class="n">initializers</span><span class="o">);</span>
+		<span class="k">return</span> <span class="nf">getTomcatWebServer</span><span class="o">(</span><span class="n">tomcat</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这里<code class="language-plaintext highlighter-rouge">ServletContextInitializer</code>是不是和<code class="language-plaintext highlighter-rouge">ServletContainerInitializer</code>有点神似?别说不仔细看还是会看错,至于这两个是啥关系,这里就不琢磨了,毕竟这个不是重点.</p>
+
+<h2 id="51-初始化">5.1 初始化</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory</span>
+<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">prepareContext</span><span class="o">(</span><span class="nc">Host</span> <span class="n">host</span><span class="o">,</span> <span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">//... 省略</span>
+  	<span class="c1">// 添加监听器</span>
+		<span class="n">context</span><span class="o">.</span><span class="na">addLifecycleListener</span><span class="o">(</span><span class="k">new</span> <span class="nc">StaticResourceConfigurer</span><span class="o">(</span><span class="n">context</span><span class="o">));</span>
+		<span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializersToUse</span> <span class="o">=</span> <span class="n">mergeInitializers</span><span class="o">(</span><span class="n">initializers</span><span class="o">);</span>
+		<span class="n">host</span><span class="o">.</span><span class="na">addChild</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+		<span class="n">configureContext</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">initializersToUse</span><span class="o">);</span>
+		<span class="n">postProcessContext</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	在初始化过程中添加了一个名字为静态资源配置的监听器,名字都很怪怪的好吧.去看看这个监听器是干嘛的.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">StaticResourceConfigurer</span> <span class="kd">implements</span> <span class="nc">LifecycleListener</span> <span class="o">{</span>
+
+		<span class="kd">private</span> <span class="kd">final</span> <span class="nc">Context</span> <span class="n">context</span><span class="o">;</span>
+
+		<span class="kd">private</span> <span class="nf">StaticResourceConfigurer</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">context</span> <span class="o">=</span> <span class="n">context</span><span class="o">;</span>
+		<span class="o">}</span>
+
+		<span class="nd">@Override</span>
+		<span class="kd">public</span> <span class="kt">void</span> <span class="nf">lifecycleEvent</span><span class="o">(</span><span class="nc">LifecycleEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+      <span class="c1">// 判断时机</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">event</span><span class="o">.</span><span class="na">getType</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="nc">Lifecycle</span><span class="o">.</span><span class="na">CONFIGURE_START_EVENT</span><span class="o">))</span> <span class="o">{</span>
+				<span class="n">addResourceJars</span><span class="o">(</span><span class="n">getUrlsOfJarsWithMetaInfResources</span><span class="o">());</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addResourceJars</span><span class="o">(</span><span class="nc">List</span><span class="o">&lt;</span><span class="no">URL</span><span class="o">&gt;</span> <span class="n">resourceJarUrls</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">for</span> <span class="o">(</span><span class="no">URL</span> <span class="n">url</span> <span class="o">:</span> <span class="n">resourceJarUrls</span><span class="o">)</span> <span class="o">{</span>
+				<span class="nc">String</span> <span class="n">path</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="na">getPath</span><span class="o">();</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">path</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="s">".jar"</span><span class="o">)</span> <span class="o">||</span> <span class="n">path</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="s">".jar!/"</span><span class="o">))</span> <span class="o">{</span>
+					<span class="nc">String</span> <span class="n">jar</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="na">toString</span><span class="o">();</span>
+					<span class="k">if</span> <span class="o">(!</span><span class="n">jar</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"jar:"</span><span class="o">))</span> <span class="o">{</span>
+						<span class="c1">// A jar file in the file system. Convert to Jar URL.</span>
+						<span class="n">jar</span> <span class="o">=</span> <span class="s">"jar:"</span> <span class="o">+</span> <span class="n">jar</span> <span class="o">+</span> <span class="s">"!/"</span><span class="o">;</span>
+					<span class="o">}</span>
+					<span class="n">addResourceSet</span><span class="o">(</span><span class="n">jar</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="k">else</span> <span class="o">{</span>
+					<span class="n">addResourceSet</span><span class="o">(</span><span class="n">url</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addResourceSet</span><span class="o">(</span><span class="nc">String</span> <span class="n">resource</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">isInsideNestedJar</span><span class="o">(</span><span class="n">resource</span><span class="o">))</span> <span class="o">{</span>
+					<span class="c1">// It's a nested jar but we now don't want the suffix because Tomcat</span>
+					<span class="c1">// is going to try and locate it as a root URL (not the resource</span>
+					<span class="c1">// inside it)</span>
+					<span class="n">resource</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">resource</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">-</span> <span class="mi">2</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="no">URL</span> <span class="n">url</span> <span class="o">=</span> <span class="k">new</span> <span class="no">URL</span><span class="o">(</span><span class="n">resource</span><span class="o">);</span>
+				<span class="nc">String</span> <span class="n">path</span> <span class="o">=</span> <span class="s">"/META-INF/resources"</span><span class="o">;</span>
+				<span class="k">this</span><span class="o">.</span><span class="na">context</span><span class="o">.</span><span class="na">getResources</span><span class="o">().</span><span class="na">createWebResourceSet</span><span class="o">(</span><span class="nc">ResourceSetType</span><span class="o">.</span><span class="na">RESOURCE_JAR</span><span class="o">,</span> <span class="s">"/"</span><span class="o">,</span> <span class="n">url</span><span class="o">,</span> <span class="n">path</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+				<span class="c1">// Ignore (probably not a directory)</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isInsideNestedJar</span><span class="o">(</span><span class="nc">String</span> <span class="n">dir</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">return</span> <span class="n">dir</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="s">"!/"</span><span class="o">)</span> <span class="o">&lt;</span> <span class="n">dir</span><span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">"!/"</span><span class="o">);</span>
+		<span class="o">}</span>
+
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	从这个监听器的代码逻辑上看 是往<code class="language-plaintext highlighter-rouge">context.getResources</code>丢东西呀.貌似是路径啥的,这会不会与开头的404问题有关呢？</p>
+
+<p>​	<code class="language-plaintext highlighter-rouge">createWebResourceSet</code>这个方法嫌疑很大,去看看.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// StandardRoot </span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">createWebResourceSet</span><span class="o">(</span><span class="nc">ResourceSetType</span> <span class="n">type</span><span class="o">,</span> <span class="nc">String</span> <span class="n">webAppMount</span><span class="o">,</span>
+            <span class="nc">String</span> <span class="n">base</span><span class="o">,</span> <span class="nc">String</span> <span class="n">archivePath</span><span class="o">,</span> <span class="nc">String</span> <span class="n">internalPath</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">List</span><span class="o">&lt;</span><span class="nc">WebResourceSet</span><span class="o">&gt;</span> <span class="n">resourceList</span><span class="o">;</span>
+        <span class="nc">WebResourceSet</span> <span class="n">resourceSet</span><span class="o">;</span>
+
+        <span class="k">switch</span> <span class="o">(</span><span class="n">type</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">case</span> <span class="nl">PRE:</span>
+                <span class="n">resourceList</span> <span class="o">=</span> <span class="n">preResources</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">case</span> <span class="nl">CLASSES_JAR:</span>
+                <span class="n">resourceList</span> <span class="o">=</span> <span class="n">classResources</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">case</span> <span class="nl">RESOURCE_JAR:</span>
+                <span class="n">resourceList</span> <span class="o">=</span> <span class="n">jarResources</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">case</span> <span class="nl">POST:</span>
+                <span class="n">resourceList</span> <span class="o">=</span> <span class="n">postResources</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">default</span><span class="o">:</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span>
+                        <span class="n">sm</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">"standardRoot.createUnknownType"</span><span class="o">,</span> <span class="n">type</span><span class="o">));</span>
+        <span class="o">}</span>
+					<span class="c1">// ..... 省略</span>
+        <span class="n">resourceList</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">resourceSet</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	以上逻辑为根据不同的类型,往不同的list中添加路径.好吧还是看不出来这个到底有什么用,404的问题也没找到,不如果跟踪一下请求看看.</p>
+
+<h1 id="六请求的跟踪">六、请求的跟踪</h1>
+
+<p>​	springMVC对请求的处理逻辑一般为 DispatcherServlet接管请求-&gt;查找handler-&gt;查找handlerDapter-&gt;视图解析器-&gt;解析视图-&gt;渲染视图.</p>
+
+<p>​	虽然这个逻辑不不完善,可能还是错的,但差不多,笔者认为哈.</p>
+
+<p>​	那么问题来了,在springMVC中的视图解析器是啥呢？看看ViewResolver的子类就知道是InternalResourceViewResolver了.但这个没啥用呀,因为具体的渲染逻辑是在视图对象里,解析器在这里没啥太大的用处.所以来看看jsp的视图<code class="language-plaintext highlighter-rouge">JstlView</code>中的操作吧.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">JstlView</span> <span class="kd">extends</span> <span class="nc">InternalResourceView</span> <span class="o">{</span>
+
+	<span class="nd">@Nullable</span>
+	<span class="kd">private</span> <span class="nc">MessageSource</span> <span class="n">messageSource</span><span class="o">;</span>
+
+
+	<span class="cm">/**
+	 * Constructor for use as a bean.
+	 * @see #setUrl
+	 */</span>
+	<span class="kd">public</span> <span class="nf">JstlView</span><span class="o">()</span> <span class="o">{</span>
+	<span class="o">}</span>
+
+	<span class="cm">/**
+	 * Create a new JstlView with the given URL.
+	 * @param url the URL to forward to
+	 */</span>
+	<span class="kd">public</span> <span class="nf">JstlView</span><span class="o">(</span><span class="nc">String</span> <span class="n">url</span><span class="o">)</span> <span class="o">{</span>
+		<span class="kd">super</span><span class="o">(</span><span class="n">url</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="cm">/**
+	 * Create a new JstlView with the given URL.
+	 * @param url the URL to forward to
+	 * @param messageSource the MessageSource to expose to JSTL tags
+	 * (will be wrapped with a JSTL-aware MessageSource that is aware of JSTL's
+	 * {@code javax.servlet.jsp.jstl.fmt.localizationContext} context-param)
+	 * @see JstlUtils#getJstlAwareMessageSource
+	 */</span>
+	<span class="kd">public</span> <span class="nf">JstlView</span><span class="o">(</span><span class="nc">String</span> <span class="n">url</span><span class="o">,</span> <span class="nc">MessageSource</span> <span class="n">messageSource</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">(</span><span class="n">url</span><span class="o">);</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">messageSource</span> <span class="o">=</span> <span class="n">messageSource</span><span class="o">;</span>
+	<span class="o">}</span>
+
+
+	<span class="cm">/**
+	 * Wraps the MessageSource with a JSTL-aware MessageSource that is aware
+	 * of JSTL's {@code javax.servlet.jsp.jstl.fmt.localizationContext}
+	 * context-param.
+	 * @see JstlUtils#getJstlAwareMessageSource
+	 */</span>
+	<span class="nd">@Override</span>
+	<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">initServletContext</span><span class="o">(</span><span class="nc">ServletContext</span> <span class="n">servletContext</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">messageSource</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">messageSource</span> <span class="o">=</span> <span class="nc">JstlUtils</span><span class="o">.</span><span class="na">getJstlAwareMessageSource</span><span class="o">(</span><span class="n">servletContext</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">messageSource</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="kd">super</span><span class="o">.</span><span class="na">initServletContext</span><span class="o">(</span><span class="n">servletContext</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="cm">/**
+	 * Exposes a JSTL LocalizationContext for Spring's locale and MessageSource.
+	 * @see JstlUtils#exposeLocalizationContext
+	 */</span>
+	<span class="nd">@Override</span>
+	<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">exposeHelpers</span><span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+		<span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">messageSource</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">JstlUtils</span><span class="o">.</span><span class="na">exposeLocalizationContext</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">messageSource</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">else</span> <span class="o">{</span>
+			<span class="nc">JstlUtils</span><span class="o">.</span><span class="na">exposeLocalizationContext</span><span class="o">(</span><span class="k">new</span> <span class="nc">RequestContext</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">getServletContext</span><span class="o">()));</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	在jstlView中并没有看到jsp的处理逻辑,去父类看看.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">InternalResourceView</span> <span class="kd">extends</span> <span class="nc">AbstractUrlBasedView</span> <span class="o">{</span>
+<span class="c1">// 省略...</span>
+
+	<span class="cm">/**
+	 * Render the internal resource given the specified model.
+	 * This includes setting the model as request attributes.
+	 */</span>
+	<span class="nd">@Override</span>
+	<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">renderMergedOutputModel</span><span class="o">(</span>
+			<span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">Object</span><span class="o">&gt;</span> <span class="n">model</span><span class="o">,</span> <span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="nc">HttpServletResponse</span> <span class="n">response</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+
+		<span class="c1">// Expose the model object as request attributes.</span>
+		<span class="n">exposeModelAsRequestAttributes</span><span class="o">(</span><span class="n">model</span><span class="o">,</span> <span class="n">request</span><span class="o">);</span>
+
+		<span class="c1">// Expose helpers as request attributes, if any.</span>
+		<span class="n">exposeHelpers</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+
+		<span class="c1">// Determine the path for the request dispatcher.</span>
+		<span class="nc">String</span> <span class="n">dispatcherPath</span> <span class="o">=</span> <span class="n">prepareForRendering</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+
+		<span class="c1">// Obtain a RequestDispatcher for the target resource (typically a JSP).</span>
+		<span class="nc">RequestDispatcher</span> <span class="n">rd</span> <span class="o">=</span> <span class="n">getRequestDispatcher</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">dispatcherPath</span><span class="o">);</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">rd</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">ServletException</span><span class="o">(</span><span class="s">"Could not get RequestDispatcher for ["</span> <span class="o">+</span> <span class="n">getUrl</span><span class="o">()</span> <span class="o">+</span>
+					<span class="s">"]: Check that the corresponding file exists within your web application archive!"</span><span class="o">);</span>
+		<span class="o">}</span>
+
+		<span class="c1">// If already included or response already committed, perform include, else forward.</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">useInclude</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">))</span> <span class="o">{</span>
+			<span class="n">response</span><span class="o">.</span><span class="na">setContentType</span><span class="o">(</span><span class="n">getContentType</span><span class="o">());</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+				<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Including ["</span> <span class="o">+</span> <span class="n">getUrl</span><span class="o">()</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="n">rd</span><span class="o">.</span><span class="na">include</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+		<span class="o">}</span>
+
+		<span class="k">else</span> <span class="o">{</span>
+			<span class="c1">// Note: The forwarded resource is supposed to determine the content type itself.</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+				<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Forwarding to ["</span> <span class="o">+</span> <span class="n">getUrl</span><span class="o">()</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="n">rd</span><span class="o">.</span><span class="na">forward</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+  
+  <span class="c1">// 省略....</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	核心处理逻辑在<code class="language-plaintext highlighter-rouge">renderMergedOutputModel</code>,经过<code class="language-plaintext highlighter-rouge">renderMergedOutputModel</code>方法一顿骚操作以后,最后发现请求被<code class="language-plaintext highlighter-rouge">RequestDispatcher</code>接管了.emmm,线索又断了,那么最后是被谁接管的呢?在j2ee的世界里,能被啥接管?不就是个servlet或者filter嘛.</p>
+
+<p>​	那么接下来要搞清楚是谁接管了请求,并渲染了jsp,虽然答案很显然了,但还是要走一下流程.</p>
+
+<h2 id="61-猜测是servlet接管了请求">6.1 猜测是servlet接管了请求</h2>
+
+<p>​	springMVC 里 servlet?那不就是DispatcherServlet嘛?但总觉得不可能,不可能请求从DispatcherServlet来又回去吧?那就看看在创建tomcat的时候有没有注册其他的servelt.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory</span>
+<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">prepareContext</span><span class="o">(</span><span class="nc">Host</span> <span class="n">host</span><span class="o">,</span> <span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// 省略 ..</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">isRegisterDefaultServlet</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">addDefaultServlet</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+		<span class="o">}</span>
+  
+		<span class="k">if</span> <span class="o">(</span><span class="n">shouldRegisterJspServlet</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">addJspServlet</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+			<span class="n">addJasperInitializer</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="c1">// 省略	...</span>
+	<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	可以看到在初始化的时候,注册了两个servlet,一个默认的servlet一个是jsp的servlet</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory</span>
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addDefaultServlet</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">Wrapper</span> <span class="n">defaultServlet</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="na">createWrapper</span><span class="o">();</span>
+		<span class="c1">// 名称</span>
+		<span class="n">defaultServlet</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">"default"</span><span class="o">);</span>
+		<span class="n">defaultServlet</span><span class="o">.</span><span class="na">setServletClass</span><span class="o">(</span><span class="s">"org.apache.catalina.servlets.DefaultServlet"</span><span class="o">);</span>
+		<span class="n">defaultServlet</span><span class="o">.</span><span class="na">addInitParameter</span><span class="o">(</span><span class="s">"debug"</span><span class="o">,</span> <span class="s">"0"</span><span class="o">);</span>
+		<span class="n">defaultServlet</span><span class="o">.</span><span class="na">addInitParameter</span><span class="o">(</span><span class="s">"listings"</span><span class="o">,</span> <span class="s">"false"</span><span class="o">);</span>
+		<span class="n">defaultServlet</span><span class="o">.</span><span class="na">setLoadOnStartup</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+		<span class="c1">// Otherwise the default location of a Spring DispatcherServlet cannot be set</span>
+  	<span class="c1">// 是否运行覆盖,这是为了dispatcherServlet做准备</span>
+  	<span class="c1">// 方便在后免把这个默认的servlet给覆盖掉</span>
+		<span class="n">defaultServlet</span><span class="o">.</span><span class="na">setOverridable</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+		<span class="n">context</span><span class="o">.</span><span class="na">addChild</span><span class="o">(</span><span class="n">defaultServlet</span><span class="o">);</span>
+		<span class="n">context</span><span class="o">.</span><span class="na">addServletMappingDecoded</span><span class="o">(</span><span class="s">"/"</span><span class="o">,</span> <span class="s">"default"</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addJspServlet</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">Wrapper</span> <span class="n">jspServlet</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="na">createWrapper</span><span class="o">();</span>
+		<span class="n">jspServlet</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">"jsp"</span><span class="o">);</span>
+		<span class="n">jspServlet</span><span class="o">.</span><span class="na">setServletClass</span><span class="o">(</span><span class="n">getJsp</span><span class="o">().</span><span class="na">getClassName</span><span class="o">());</span>
+		<span class="n">jspServlet</span><span class="o">.</span><span class="na">addInitParameter</span><span class="o">(</span><span class="s">"fork"</span><span class="o">,</span> <span class="s">"false"</span><span class="o">);</span>
+		<span class="n">getJsp</span><span class="o">().</span><span class="na">getInitParameters</span><span class="o">().</span><span class="na">forEach</span><span class="o">(</span><span class="nl">jspServlet:</span><span class="o">:</span><span class="n">addInitParameter</span><span class="o">);</span>
+		<span class="n">jspServlet</span><span class="o">.</span><span class="na">setLoadOnStartup</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
+		<span class="n">context</span><span class="o">.</span><span class="na">addChild</span><span class="o">(</span><span class="n">jspServlet</span><span class="o">);</span>
+    <span class="c1">// 拦截 *.jsp 后缀的请求</span>
+		<span class="n">context</span><span class="o">.</span><span class="na">addServletMappingDecoded</span><span class="o">(</span><span class="s">"*.jsp"</span><span class="o">,</span> <span class="s">"jsp"</span><span class="o">);</span>
+		<span class="n">context</span><span class="o">.</span><span class="na">addServletMappingDecoded</span><span class="o">(</span><span class="s">"*.jspx"</span><span class="o">,</span> <span class="s">"jsp"</span><span class="o">);</span>
+	<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>两个servlet,一个默认的,一个jsp的.看到这儿会不会有点奇怪,为啥不注册dispatcherServlet?emmm不是很明白昂,但是这个核心的servlet是不会落下的.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@AutoConfigureOrder</span><span class="o">(</span><span class="nc">Ordered</span><span class="o">.</span><span class="na">HIGHEST_PRECEDENCE</span><span class="o">)</span>
+<span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+<span class="cm">/**
+ * 匹配容器为 servlet
+ * **/</span>
+<span class="nd">@ConditionalOnWebApplication</span><span class="o">(</span><span class="n">type</span> <span class="o">=</span> <span class="nc">Type</span><span class="o">.</span><span class="na">SERVLET</span><span class="o">)</span>
+<span class="cm">/**
+ * 判断 class path 路径下有 DispatcherServlet.class
+ * **/</span>
+<span class="nd">@ConditionalOnClass</span><span class="o">(</span><span class="nc">DispatcherServlet</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+<span class="cm">/***
+ * 在 ServletWebServerFactoryAutoConfiguration 之后生效
+ * */</span>
+<span class="nd">@AutoConfigureAfter</span><span class="o">(</span><span class="nc">ServletWebServerFactoryAutoConfiguration</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DispatcherServletAutoConfiguration</span> <span class="o">{</span>
+
+	<span class="cm">/*
+	 * The bean name for a DispatcherServlet that will be mapped to the root URL "/"
+	 */</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">DEFAULT_DISPATCHER_SERVLET_BEAN_NAME</span> <span class="o">=</span> <span class="s">"dispatcherServlet"</span><span class="o">;</span>
+
+	<span class="cm">/*
+	 * The bean name for a ServletRegistrationBean for the DispatcherServlet "/"
+	 */</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">DEFAULT_DISPATCHER_SERVLET_REGISTRATION_BEAN_NAME</span> <span class="o">=</span> <span class="s">"dispatcherServletRegistration"</span><span class="o">;</span>
+
+	<span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+	<span class="nd">@Conditional</span><span class="o">(</span><span class="nc">DefaultDispatcherServletCondition</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+	<span class="nd">@ConditionalOnClass</span><span class="o">(</span><span class="nc">ServletRegistration</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+	<span class="c1">// 启用配置 WebMvcProperties</span>
+	<span class="nd">@EnableConfigurationProperties</span><span class="o">(</span><span class="nc">WebMvcProperties</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+	<span class="kd">protected</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">DispatcherServletConfiguration</span> <span class="o">{</span>
+
+		<span class="nd">@Bean</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="no">DEFAULT_DISPATCHER_SERVLET_BEAN_NAME</span><span class="o">)</span>
+		<span class="kd">public</span> <span class="nc">DispatcherServlet</span> <span class="nf">dispatcherServlet</span><span class="o">(</span><span class="nc">WebMvcProperties</span> <span class="n">webMvcProperties</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">DispatcherServlet</span> <span class="n">dispatcherServlet</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DispatcherServlet</span><span class="o">();</span>
+			<span class="n">dispatcherServlet</span><span class="o">.</span><span class="na">setDispatchOptionsRequest</span><span class="o">(</span><span class="n">webMvcProperties</span><span class="o">.</span><span class="na">isDispatchOptionsRequest</span><span class="o">());</span>
+			<span class="n">dispatcherServlet</span><span class="o">.</span><span class="na">setDispatchTraceRequest</span><span class="o">(</span><span class="n">webMvcProperties</span><span class="o">.</span><span class="na">isDispatchTraceRequest</span><span class="o">());</span>
+			<span class="n">dispatcherServlet</span><span class="o">.</span><span class="na">setThrowExceptionIfNoHandlerFound</span><span class="o">(</span><span class="n">webMvcProperties</span><span class="o">.</span><span class="na">isThrowExceptionIfNoHandlerFound</span><span class="o">());</span>
+			<span class="n">dispatcherServlet</span><span class="o">.</span><span class="na">setPublishEvents</span><span class="o">(</span><span class="n">webMvcProperties</span><span class="o">.</span><span class="na">isPublishRequestHandledEvents</span><span class="o">());</span>
+			<span class="n">dispatcherServlet</span><span class="o">.</span><span class="na">setEnableLoggingRequestDetails</span><span class="o">(</span><span class="n">webMvcProperties</span><span class="o">.</span><span class="na">isLogRequestDetails</span><span class="o">());</span>
+			<span class="k">return</span> <span class="n">dispatcherServlet</span><span class="o">;</span>
+		<span class="o">}</span>
+
+		<span class="nd">@Bean</span>
+		<span class="nd">@ConditionalOnBean</span><span class="o">(</span><span class="nc">MultipartResolver</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+		<span class="nd">@ConditionalOnMissingBean</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="nc">DispatcherServlet</span><span class="o">.</span><span class="na">MULTIPART_RESOLVER_BEAN_NAME</span><span class="o">)</span>
+		<span class="kd">public</span> <span class="nc">MultipartResolver</span> <span class="nf">multipartResolver</span><span class="o">(</span><span class="nc">MultipartResolver</span> <span class="n">resolver</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// Detect if the user has created a MultipartResolver but named it incorrectly</span>
+			<span class="k">return</span> <span class="n">resolver</span><span class="o">;</span>
+		<span class="o">}</span>
+
+	<span class="o">}</span>
+
+	<span class="nd">@Configuration</span><span class="o">(</span><span class="n">proxyBeanMethods</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+	<span class="nd">@Conditional</span><span class="o">(</span><span class="nc">DispatcherServletRegistrationCondition</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+	<span class="nd">@ConditionalOnClass</span><span class="o">(</span><span class="nc">ServletRegistration</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+	<span class="nd">@EnableConfigurationProperties</span><span class="o">(</span><span class="nc">WebMvcProperties</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+	<span class="nd">@Import</span><span class="o">(</span><span class="nc">DispatcherServletConfiguration</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+	<span class="kd">protected</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">DispatcherServletRegistrationConfiguration</span> <span class="o">{</span>
+
+		<span class="nd">@Bean</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="no">DEFAULT_DISPATCHER_SERVLET_REGISTRATION_BEAN_NAME</span><span class="o">)</span>
+		<span class="nd">@ConditionalOnBean</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="nc">DispatcherServlet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">name</span> <span class="o">=</span> <span class="no">DEFAULT_DISPATCHER_SERVLET_BEAN_NAME</span><span class="o">)</span>
+		<span class="kd">public</span> <span class="nc">DispatcherServletRegistrationBean</span> <span class="nf">dispatcherServletRegistration</span><span class="o">(</span><span class="nc">DispatcherServlet</span> <span class="n">dispatcherServlet</span><span class="o">,</span>
+				<span class="nc">WebMvcProperties</span> <span class="n">webMvcProperties</span><span class="o">,</span> <span class="nc">ObjectProvider</span><span class="o">&lt;</span><span class="nc">MultipartConfigElement</span><span class="o">&gt;</span> <span class="n">multipartConfig</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">DispatcherServletRegistrationBean</span> <span class="n">registration</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DispatcherServletRegistrationBean</span><span class="o">(</span><span class="n">dispatcherServlet</span><span class="o">,</span>
+					<span class="n">webMvcProperties</span><span class="o">.</span><span class="na">getServlet</span><span class="o">().</span><span class="na">getPath</span><span class="o">());</span>
+      <span class="c1">// 名称</span>
+			<span class="n">registration</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="no">DEFAULT_DISPATCHER_SERVLET_BEAN_NAME</span><span class="o">);</span>
+      <span class="c1">// 启动顺序</span>
+			<span class="n">registration</span><span class="o">.</span><span class="na">setLoadOnStartup</span><span class="o">(</span><span class="n">webMvcProperties</span><span class="o">.</span><span class="na">getServlet</span><span class="o">().</span><span class="na">getLoadOnStartup</span><span class="o">());</span>
+			<span class="n">multipartConfig</span><span class="o">.</span><span class="na">ifAvailable</span><span class="o">(</span><span class="nl">registration:</span><span class="o">:</span><span class="n">setMultipartConfig</span><span class="o">);</span>
+			<span class="k">return</span> <span class="n">registration</span><span class="o">;</span>
+		<span class="o">}</span>
+
+	<span class="o">}</span>
+  <span class="c1">// 省略....</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	在自动配置的这个类里面生成了一个<code class="language-plaintext highlighter-rouge">DispatcherServletRegistrationBean</code>对象,这个对象就是用于组测dispatcherServlet的.<code class="language-plaintext highlighter-rouge">DispatcherServletRegistrationBean</code>是<code class="language-plaintext highlighter-rouge">ServletContextInitializer</code>的子类,用于初始化,注册等操作等.</p>
+
+<p>​	那么这个对象是在什么时候注册的呢?又要回到tomcat创建的时候了.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory</span>
+<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nc">WebServer</span> <span class="nf">getWebServer</span><span class="o">(</span><span class="nc">ServletContextInitializer</span><span class="o">...</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// 省略..</span>
+		<span class="n">prepareContext</span><span class="o">(</span><span class="n">tomcat</span><span class="o">.</span><span class="na">getHost</span><span class="o">(),</span> <span class="n">initializers</span><span class="o">);</span>
+		<span class="k">return</span> <span class="nf">getTomcatWebServer</span><span class="o">(</span><span class="n">tomcat</span><span class="o">);</span>
+	<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	在调用初始化上下文的时候把这个玩意儿给传进去了.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory</span>
+<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">prepareContext</span><span class="o">(</span><span class="nc">Host</span> <span class="n">host</span><span class="o">,</span> <span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+  <span class="c1">// 省略...</span>
+		<span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializersToUse</span> <span class="o">=</span> <span class="n">mergeInitializers</span><span class="o">(</span><span class="n">initializers</span><span class="o">);</span>
+		<span class="n">host</span><span class="o">.</span><span class="na">addChild</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+		<span class="n">configureContext</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">initializersToUse</span><span class="o">);</span>
+		<span class="n">postProcessContext</span><span class="o">(</span><span class="n">context</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这里合并了所有的<code class="language-plaintext highlighter-rouge">ServletContextInitializer</code>对象,传入到了<code class="language-plaintext highlighter-rouge">configureContext</code>方法中.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory</span>
+<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">configureContext</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">,</span> <span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">TomcatStarter</span> <span class="n">starter</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TomcatStarter</span><span class="o">(</span><span class="n">initializers</span><span class="o">);</span>
+		<span class="n">context</span><span class="o">.</span><span class="na">addServletContainerInitializer</span><span class="o">(</span><span class="n">starter</span><span class="o">,</span> <span class="no">NO_CLASSES</span><span class="o">);</span>
+
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这里把<code class="language-plaintext highlighter-rouge">ServletContextInitializer</code>转成了一个<code class="language-plaintext highlighter-rouge">TomcatStarter</code>对象,并把这个对象添加到了上下文中去.这个</p>
+
+<p><code class="language-plaintext highlighter-rouge">TomcatStarter</code>就厉害了.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">TomcatStarter</span> <span class="kd">implements</span> <span class="nc">ServletContainerInitializer</span> <span class="o">{</span>
+
+	<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Log</span> <span class="n">logger</span> <span class="o">=</span> <span class="nc">LogFactory</span><span class="o">.</span><span class="na">getLog</span><span class="o">(</span><span class="nc">TomcatStarter</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+	<span class="kd">private</span> <span class="kd">final</span> <span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializers</span><span class="o">;</span>
+
+	<span class="kd">private</span> <span class="kd">volatile</span> <span class="nc">Exception</span> <span class="n">startUpException</span><span class="o">;</span>
+
+	<span class="nc">TomcatStarter</span><span class="o">(</span><span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">initializers</span> <span class="o">=</span> <span class="n">initializers</span><span class="o">;</span>
+	<span class="o">}</span>
+
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">onStartup</span><span class="o">(</span><span class="nc">Set</span><span class="o">&lt;</span><span class="nc">Class</span><span class="o">&lt;?&gt;&gt;</span> <span class="n">classes</span><span class="o">,</span> <span class="nc">ServletContext</span> <span class="n">servletContext</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ServletException</span> <span class="o">{</span>
+		<span class="k">try</span> <span class="o">{</span>
+			<span class="c1">// 初始化所有需要 初始化的类</span>
+			<span class="k">for</span> <span class="o">(</span><span class="nc">ServletContextInitializer</span> <span class="n">initializer</span> <span class="o">:</span> <span class="k">this</span><span class="o">.</span><span class="na">initializers</span><span class="o">)</span> <span class="o">{</span>
+				<span class="n">initializer</span><span class="o">.</span><span class="na">onStartup</span><span class="o">(</span><span class="n">servletContext</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">startUpException</span> <span class="o">=</span> <span class="n">ex</span><span class="o">;</span>
+			<span class="c1">// Prevent Tomcat from logging and re-throwing when we know we can</span>
+			<span class="c1">// deal with it in the main thread, but log for information here.</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isErrorEnabled</span><span class="o">())</span> <span class="o">{</span>
+				<span class="n">logger</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"Error starting Tomcat context. Exception: "</span> <span class="o">+</span> <span class="n">ex</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">". Message: "</span>
+						<span class="o">+</span> <span class="n">ex</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+
+	<span class="nc">Exception</span> <span class="nf">getStartUpException</span><span class="o">()</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">startUpException</span><span class="o">;</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	<code class="language-plaintext highlighter-rouge">TomcatStarter</code>实现了<code class="language-plaintext highlighter-rouge">ServletContainerInitializer</code>接口,这个接口就厉害了,在servlet的生命中期中,会调用实现这个接口的<code class="language-plaintext highlighter-rouge">onStartup</code>方法,至于什么是servlet的生命周期,就不引出了,估计一时半会也说不完.</p>
+
+<p>​	嗯,知道这个东西的厉害,说了这么多,也没说<code class="language-plaintext highlighter-rouge">ServletContextInitializer</code>这个东西哪来的.不是方法传进来的嘛?不行就回去看看.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nc">WebServer</span> <span class="nf">getWebServer</span><span class="o">(</span><span class="nc">ServletContextInitializer</span><span class="o">...</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// 省略...</span>
+		<span class="k">return</span> <span class="nf">getTomcatWebServer</span><span class="o">(</span><span class="n">tomcat</span><span class="o">);</span>
+	<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	嗯,是传进来的,怎么传进来的？当然是创建的时候传的了0.0</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// ServletWebServerApplicationContext</span>
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">createWebServer</span><span class="o">()</span> <span class="o">{</span>
+		<span class="nc">WebServer</span> <span class="n">webServer</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">webServer</span><span class="o">;</span>
+		<span class="nc">ServletContext</span> <span class="n">servletContext</span> <span class="o">=</span> <span class="n">getServletContext</span><span class="o">();</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">webServer</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">servletContext</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">ServletWebServerFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="n">getWebServerFactory</span><span class="o">();</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">webServer</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="na">getWebServer</span><span class="o">(</span><span class="n">getSelfInitializer</span><span class="o">());</span>
+		<span class="o">}</span>
+		<span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">servletContext</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="n">getSelfInitializer</span><span class="o">().</span><span class="na">onStartup</span><span class="o">(</span><span class="n">servletContext</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="k">catch</span> <span class="o">(</span><span class="nc">ServletException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+				<span class="k">throw</span> <span class="k">new</span> <span class="nf">ApplicationContextException</span><span class="o">(</span><span class="s">"Cannot initialize servlet context"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="n">initPropertySources</span><span class="o">();</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="62-servletcontextinitializer-怎么来的">6.2 ServletContextInitializer 怎么来的</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 	ServletWebServerApplicationContext</span>
+<span class="kd">private</span> <span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">boot</span><span class="o">.</span><span class="na">web</span><span class="o">.</span><span class="na">servlet</span><span class="o">.</span><span class="na">ServletContextInitializer</span> <span class="nf">getSelfInitializer</span><span class="o">()</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="k">this</span><span class="o">::</span><span class="n">selfInitialize</span><span class="o">;</span>
+	<span class="o">}</span>
+
+	<span class="kd">private</span> <span class="kt">void</span> <span class="nf">selfInitialize</span><span class="o">(</span><span class="nc">ServletContext</span> <span class="n">servletContext</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">ServletException</span> <span class="o">{</span>
+		<span class="n">prepareWebApplicationContext</span><span class="o">(</span><span class="n">servletContext</span><span class="o">);</span>
+		<span class="n">registerApplicationScope</span><span class="o">(</span><span class="n">servletContext</span><span class="o">);</span>
+		<span class="nc">WebApplicationContextUtils</span><span class="o">.</span><span class="na">registerEnvironmentBeans</span><span class="o">(</span><span class="n">getBeanFactory</span><span class="o">(),</span> <span class="n">servletContext</span><span class="o">);</span>
+		<span class="k">for</span> <span class="o">(</span><span class="nc">ServletContextInitializer</span> <span class="n">beans</span> <span class="o">:</span> <span class="n">getServletContextInitializerBeans</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">beans</span><span class="o">.</span><span class="na">onStartup</span><span class="o">(</span><span class="n">servletContext</span><span class="o">);</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这就是了,那配置类<code class="language-plaintext highlighter-rouge">DispatcherServletAutoConfiguration</code>里面的<code class="language-plaintext highlighter-rouge">DispatcherServletRegistrationBean</code>哪去了?这里的确没有,不过在<code class="language-plaintext highlighter-rouge">getServletContextInitializerBeans()</code>方法返回的集合里面.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// ServletWebServerApplicationContext</span>
+<span class="kd">protected</span> <span class="nc">Collection</span><span class="o">&lt;</span><span class="nc">ServletContextInitializer</span><span class="o">&gt;</span> <span class="nf">getServletContextInitializerBeans</span><span class="o">()</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="k">new</span> <span class="nf">ServletContextInitializerBeans</span><span class="o">(</span><span class="n">getBeanFactory</span><span class="o">());</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	<code class="language-plaintext highlighter-rouge">ServletContextInitializerBeans</code>是一个继承了<code class="language-plaintext highlighter-rouge">AbstractCollection</code>的集合对象.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// ServletContextInitializerBeans</span>
+<span class="kd">public</span> <span class="nf">ServletContextInitializerBeans</span><span class="o">(</span><span class="nc">ListableBeanFactory</span> <span class="n">beanFactory</span><span class="o">,</span>
+			<span class="nc">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">ServletContextInitializer</span><span class="o">&gt;...</span> <span class="n">initializerTypes</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">initializers</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedMultiValueMap</span><span class="o">&lt;&gt;();</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">initializerTypes</span> <span class="o">=</span> <span class="o">(</span><span class="n">initializerTypes</span><span class="o">.</span><span class="na">length</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">?</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">initializerTypes</span><span class="o">)</span>
+				<span class="o">:</span> <span class="nc">Collections</span><span class="o">.</span><span class="na">singletonList</span><span class="o">(</span><span class="nc">ServletContextInitializer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+		<span class="n">addServletContextInitializerBeans</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+		<span class="n">addAdaptableBeans</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">);</span>
+		<span class="nc">List</span><span class="o">&lt;</span><span class="nc">ServletContextInitializer</span><span class="o">&gt;</span> <span class="n">sortedInitializers</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">initializers</span><span class="o">.</span><span class="na">values</span><span class="o">().</span><span class="na">stream</span><span class="o">()</span>
+				<span class="o">.</span><span class="na">flatMap</span><span class="o">((</span><span class="n">value</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">value</span><span class="o">.</span><span class="na">stream</span><span class="o">().</span><span class="na">sorted</span><span class="o">(</span><span class="nc">AnnotationAwareOrderComparator</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">))</span>
+				<span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toList</span><span class="o">());</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">sortedList</span> <span class="o">=</span> <span class="nc">Collections</span><span class="o">.</span><span class="na">unmodifiableList</span><span class="o">(</span><span class="n">sortedInitializers</span><span class="o">);</span>
+		<span class="n">logMappings</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">initializers</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	核心逻辑就在构造方法中的<code class="language-plaintext highlighter-rouge">addServletContextInitializerBeans</code>方法中.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// ServletContextInitializerBeans</span>
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addServletContextInitializerBeans</span><span class="o">(</span><span class="nc">ListableBeanFactory</span> <span class="n">beanFactory</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">for</span> <span class="o">(</span><span class="nc">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">ServletContextInitializer</span><span class="o">&gt;</span> <span class="n">initializerType</span> <span class="o">:</span> <span class="k">this</span><span class="o">.</span><span class="na">initializerTypes</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">for</span> <span class="o">(</span><span class="nc">Entry</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="o">?</span> <span class="kd">extends</span> <span class="nc">ServletContextInitializer</span><span class="o">&gt;</span> <span class="n">initializerBean</span> <span class="o">:</span> <span class="n">getOrderedBeansOfType</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">,</span>
+					<span class="n">initializerType</span><span class="o">))</span> <span class="o">{</span>
+				<span class="n">addServletContextInitializerBean</span><span class="o">(</span><span class="n">initializerBean</span><span class="o">.</span><span class="na">getKey</span><span class="o">(),</span> <span class="n">initializerBean</span><span class="o">.</span><span class="na">getValue</span><span class="o">(),</span> <span class="n">beanFactory</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+	
+	<span class="kd">private</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Entry</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="no">T</span><span class="o">&gt;&gt;</span> <span class="nf">getOrderedBeansOfType</span><span class="o">(</span><span class="nc">ListableBeanFactory</span> <span class="n">beanFactory</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">type</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="nf">getOrderedBeansOfType</span><span class="o">(</span><span class="n">beanFactory</span><span class="o">,</span> <span class="n">type</span><span class="o">,</span> <span class="nc">Collections</span><span class="o">.</span><span class="na">emptySet</span><span class="o">());</span>
+	<span class="o">}</span>
+	<span class="kd">private</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">Entry</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="no">T</span><span class="o">&gt;&gt;</span> <span class="nf">getOrderedBeansOfType</span><span class="o">(</span><span class="nc">ListableBeanFactory</span> <span class="n">beanFactory</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">type</span><span class="o">,</span>
+			<span class="nc">Set</span><span class="o">&lt;?&gt;</span> <span class="n">excludes</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">String</span><span class="o">[]</span> <span class="n">names</span> <span class="o">=</span> <span class="n">beanFactory</span><span class="o">.</span><span class="na">getBeanNamesForType</span><span class="o">(</span><span class="n">type</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+		<span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="no">T</span><span class="o">&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">LinkedHashMap</span><span class="o">&lt;&gt;();</span>
+		<span class="k">for</span> <span class="o">(</span><span class="nc">String</span> <span class="n">name</span> <span class="o">:</span> <span class="n">names</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span> <span class="o">(!</span><span class="n">excludes</span><span class="o">.</span><span class="na">contains</span><span class="o">(</span><span class="n">name</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nc">ScopedProxyUtils</span><span class="o">.</span><span class="na">isScopedTarget</span><span class="o">(</span><span class="n">name</span><span class="o">))</span> <span class="o">{</span>
+				<span class="no">T</span> <span class="n">bean</span> <span class="o">=</span> <span class="n">beanFactory</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">type</span><span class="o">);</span>
+				<span class="k">if</span> <span class="o">(!</span><span class="n">excludes</span><span class="o">.</span><span class="na">contains</span><span class="o">(</span><span class="n">bean</span><span class="o">))</span> <span class="o">{</span>
+					<span class="n">map</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">bean</span><span class="o">);</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="nc">List</span><span class="o">&lt;</span><span class="nc">Entry</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="no">T</span><span class="o">&gt;&gt;</span> <span class="n">beans</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;(</span><span class="n">map</span><span class="o">.</span><span class="na">entrySet</span><span class="o">());</span>
+		<span class="n">beans</span><span class="o">.</span><span class="na">sort</span><span class="o">((</span><span class="n">o1</span><span class="o">,</span> <span class="n">o2</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">AnnotationAwareOrderComparator</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">compare</span><span class="o">(</span><span class="n">o1</span><span class="o">.</span><span class="na">getValue</span><span class="o">(),</span> <span class="n">o2</span><span class="o">.</span><span class="na">getValue</span><span class="o">()));</span>
+		<span class="k">return</span> <span class="n">beans</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	从ioc中获取所有<code class="language-plaintext highlighter-rouge">ServletContextInitialize</code>的子类,而这个bean就刚好是之前配置类中的bean,<code class="language-plaintext highlighter-rouge">DispatcherServletRegistrationBean</code>.</p>
+
+<p>​	至于注册的逻辑就不阐述了,很简单,顺着<code class="language-plaintext highlighter-rouge">DispatcherServletRegistrationBean</code>的父类<code class="language-plaintext highlighter-rouge">RegistrationBean</code>看下去就好.</p>
+
+<h1 id="七整理线索">七、整理线索</h1>
+
+<p>​	前面说了那么多跟404完全没有关系呀,其实前面是在做铺垫而已,看官别着急.由前文的逻辑可以知道在tomcat里面至少注册了2个servetl,一个是spring的(后面覆盖的),一个是jsp的.那么完全由理由猜测,最后由JstlView转发的请求到了jspServlet里面.来看看jspSerlvet里面干了啥?</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="c1">// JspServlet</span>
+ <span class="kd">public</span> <span class="kt">void</span> <span class="nf">service</span> <span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="nc">HttpServletResponse</span> <span class="n">response</span><span class="o">)</span>
+            <span class="kd">throws</span> <span class="nc">ServletException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+
+       	<span class="c1">// 省略....</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">serviceJspFile</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">,</span> <span class="n">jspUri</span><span class="o">,</span> <span class="n">precompile</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RuntimeException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">ServletException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Throwable</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">ExceptionUtils</span><span class="o">.</span><span class="na">handleThrowable</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">ServletException</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	别问我为啥只贴了service这个方法.先看看第一个方法<code class="language-plaintext highlighter-rouge">serviceJspFile</code>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// JspServlet </span>
+<span class="kd">private</span> <span class="kt">void</span> <span class="nf">serviceJspFile</span><span class="o">(</span><span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span>
+                                <span class="nc">HttpServletResponse</span> <span class="n">response</span><span class="o">,</span> <span class="nc">String</span> <span class="n">jspUri</span><span class="o">,</span>
+                                <span class="kt">boolean</span> <span class="n">precompile</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="nc">ServletException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+
+        <span class="nc">JspServletWrapper</span> <span class="n">wrapper</span> <span class="o">=</span> <span class="n">rctxt</span><span class="o">.</span><span class="na">getWrapper</span><span class="o">(</span><span class="n">jspUri</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">wrapper</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">synchronized</span><span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">wrapper</span> <span class="o">=</span> <span class="n">rctxt</span><span class="o">.</span><span class="na">getWrapper</span><span class="o">(</span><span class="n">jspUri</span><span class="o">);</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">wrapper</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="c1">// Check if the requested JSP page exists, to avoid</span>
+                    <span class="c1">// creating unnecessary directories and files.</span>
+                  	<span class="c1">// 判断 jsp 文件是否存在</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="kc">null</span> <span class="o">==</span> <span class="n">context</span><span class="o">.</span><span class="na">getResource</span><span class="o">(</span><span class="n">jspUri</span><span class="o">))</span> <span class="o">{</span>
+                        <span class="n">handleMissingResource</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">,</span> <span class="n">jspUri</span><span class="o">);</span>
+                        <span class="k">return</span><span class="o">;</span>
+                    <span class="o">}</span>
+                    <span class="n">wrapper</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">JspServletWrapper</span><span class="o">(</span><span class="n">config</span><span class="o">,</span> <span class="n">options</span><span class="o">,</span> <span class="n">jspUri</span><span class="o">,</span>
+                                                    <span class="n">rctxt</span><span class="o">);</span>
+                    <span class="n">rctxt</span><span class="o">.</span><span class="na">addWrapper</span><span class="o">(</span><span class="n">jspUri</span><span class="o">,</span><span class="n">wrapper</span><span class="o">);</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">wrapper</span><span class="o">.</span><span class="na">service</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">,</span> <span class="n">precompile</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">FileNotFoundException</span> <span class="n">fnfe</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">handleMissingResource</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">,</span> <span class="n">jspUri</span><span class="o">);</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	诺,核心代码被抓了.这个SerlvetContext,既然在tomcat里面那么它的实现类肯定是<code class="language-plaintext highlighter-rouge">ApplicationContext</code>,不用怀疑,不信你跟跟流程看看.</p>
+
+<p>​	既然是<code class="language-plaintext highlighter-rouge">ApplicationContext</code>中获取资源,那来看看是怎么拿的文件吧.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//  ApplicationContext</span>
+<span class="kd">public</span> <span class="no">URL</span> <span class="nf">getResource</span><span class="o">(</span><span class="nc">String</span> <span class="n">path</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">MalformedURLException</span> <span class="o">{</span>
+
+      	<span class="c1">// 省略... </span>
+        <span class="nc">WebResourceRoot</span> <span class="n">resources</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="na">getResources</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">resources</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+          	<span class="c1">// 获取资源</span>
+            <span class="k">return</span> <span class="n">resources</span><span class="o">.</span><span class="na">getResource</span><span class="o">(</span><span class="n">validatedPath</span><span class="o">).</span><span class="na">getURL</span><span class="o">();</span>
+        <span class="o">}</span>
+
+        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	转战到 <code class="language-plaintext highlighter-rouge">WebResourceRoot</code>里去,<code class="language-plaintext highlighter-rouge">WebResourceRoot</code>是个接口,在本案例中的唯一子类是<code class="language-plaintext highlighter-rouge">StandardRoot</code>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// StandardRoot</span>
+<span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">WebResource</span> <span class="nf">getResource</span><span class="o">(</span><span class="nc">String</span> <span class="n">path</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nf">getResource</span><span class="o">(</span><span class="n">path</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">protected</span> <span class="nc">WebResource</span> <span class="nf">getResource</span><span class="o">(</span><span class="nc">String</span> <span class="n">path</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">validate</span><span class="o">,</span>
+            <span class="kt">boolean</span> <span class="n">useClassLoaderResources</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">validate</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">validate</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+        <span class="o">}</span>
+				<span class="c1">// 判断是否允许缓存,这个默认值是true</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">isCachingAllowed</span><span class="o">())</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="n">cache</span><span class="o">.</span><span class="na">getResource</span><span class="o">(</span><span class="n">path</span><span class="o">,</span> <span class="n">useClassLoaderResources</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="nf">getResourceInternal</span><span class="o">(</span><span class="n">path</span><span class="o">,</span> <span class="n">useClassLoaderResources</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这里分两种情况,一个是从换成里面获取,另外则从非缓存中获取,缓存里面的世界很精彩的.</p>
+
+<h2 id="71-从缓存里面获取">7.1 从缓存里面获取</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Cache</span>
+<span class="kd">protected</span> <span class="nc">WebResource</span> <span class="nf">getResource</span><span class="o">(</span><span class="nc">String</span> <span class="n">path</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">useClassLoaderResources</span><span class="o">)</span> <span class="o">{</span>
+
+  	<span class="c1">// 省略....</span>
+		<span class="c1">// 判断是否获取到缓存</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">cacheEntry</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// Local copy to ensure consistency</span>
+        <span class="kt">int</span> <span class="n">objectMaxSizeBytes</span> <span class="o">=</span> <span class="n">getObjectMaxSizeBytes</span><span class="o">();</span>
+      	<span class="c1">// 创建缓存对象</span>
+        <span class="nc">CachedResource</span> <span class="n">newCacheEntry</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CachedResource</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">root</span><span class="o">,</span> <span class="n">path</span><span class="o">,</span> <span class="n">getTtl</span><span class="o">(),</span>
+                <span class="n">objectMaxSizeBytes</span><span class="o">,</span> <span class="n">useClassLoaderResources</span><span class="o">);</span>
+
+        <span class="c1">// Concurrent callers will end up with the same CachedResource</span>
+        <span class="c1">// instance</span>
+      	<span class="c1">// 放入缓存中</span>
+        <span class="n">cacheEntry</span> <span class="o">=</span> <span class="n">resourceCache</span><span class="o">.</span><span class="na">putIfAbsent</span><span class="o">(</span><span class="n">path</span><span class="o">,</span> <span class="n">newCacheEntry</span><span class="o">);</span>
+				<span class="c1">// 二次判断</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">cacheEntry</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="c1">// newCacheEntry was inserted into the cache - validate it</span>
+            <span class="n">cacheEntry</span> <span class="o">=</span> <span class="n">newCacheEntry</span><span class="o">;</span>
+          	<span class="c1">// 验证资源的合法性(这里就石锤了)</span>
+            <span class="n">cacheEntry</span><span class="o">.</span><span class="na">validateResource</span><span class="o">(</span><span class="n">useClassLoaderResources</span><span class="o">);</span>
+		<span class="c1">// 省略....</span>
+
+    <span class="k">return</span> <span class="n">cacheEntry</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	还差2步</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// CachedResource</span>
+<span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">validateResource</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">useClassLoaderResources</span><span class="o">)</span> <span class="o">{</span>
+       <span class="c1">// 省略..</span>
+  			<span class="c1">// 非空检查</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">webResource</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+          	<span class="c1">// 加锁</span>
+            <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+              	<span class="c1">// 双重检查</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">webResource</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">webResource</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="na">getResourceInternal</span><span class="o">(</span>
+                            <span class="n">webAppPath</span><span class="o">,</span> <span class="n">useClassLoaderResources</span><span class="o">);</span>
+                    <span class="n">getLastModified</span><span class="o">();</span>
+                    <span class="n">getContentLength</span><span class="o">();</span>
+                    <span class="n">nextCheck</span> <span class="o">=</span> <span class="n">ttl</span> <span class="o">+</span> <span class="n">now</span><span class="o">;</span>
+                    <span class="c1">// exists() is a relatively expensive check for a file so</span>
+                    <span class="c1">// use the fact that we know if it exists at this point</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">webResource</span> <span class="k">instanceof</span> <span class="nc">EmptyResource</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="n">cachedExists</span> <span class="o">=</span> <span class="nc">Boolean</span><span class="o">.</span><span class="na">FALSE</span><span class="o">;</span>
+                    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                        <span class="n">cachedExists</span> <span class="o">=</span> <span class="nc">Boolean</span><span class="o">.</span><span class="na">TRUE</span><span class="o">;</span>
+                    <span class="o">}</span>
+                    <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	程序初次允许的时候,webResource肯定是为空的,别说缓存了.这里的root是<code class="language-plaintext highlighter-rouge">StandardRoot</code>,又调用回去了.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// StandardRoot</span>
+
+ <span class="kd">private</span> <span class="kd">final</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">List</span><span class="o">&lt;</span><span class="nc">WebResourceSet</span><span class="o">&gt;&gt;</span> <span class="n">allResources</span> <span class="o">=</span>
+            <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+    <span class="o">{</span>
+        <span class="n">allResources</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">preResources</span><span class="o">);</span>
+        <span class="n">allResources</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">mainResources</span><span class="o">);</span>
+        <span class="n">allResources</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">classResources</span><span class="o">);</span>
+        <span class="n">allResources</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">jarResources</span><span class="o">);</span>
+        <span class="n">allResources</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">postResources</span><span class="o">);</span>
+    <span class="o">}</span>
+
+<span class="kd">protected</span> <span class="kd">final</span> <span class="nc">WebResource</span> <span class="nf">getResourceInternal</span><span class="o">(</span><span class="nc">String</span> <span class="n">path</span><span class="o">,</span>
+            <span class="kt">boolean</span> <span class="n">useClassLoaderResources</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">WebResource</span> <span class="n">result</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="nc">WebResource</span> <span class="n">virtual</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="nc">WebResource</span> <span class="n">mainEmpty</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="k">for</span> <span class="o">(</span><span class="nc">List</span><span class="o">&lt;</span><span class="nc">WebResourceSet</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">:</span> <span class="n">allResources</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">for</span> <span class="o">(</span><span class="nc">WebResourceSet</span> <span class="n">webResourceSet</span> <span class="o">:</span> <span class="n">list</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">if</span> <span class="o">(!</span><span class="n">useClassLoaderResources</span> <span class="o">&amp;&amp;</span>  <span class="o">!</span><span class="n">webResourceSet</span><span class="o">.</span><span class="na">getClassLoaderOnly</span><span class="o">()</span> <span class="o">||</span>
+                        <span class="n">useClassLoaderResources</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">webResourceSet</span><span class="o">.</span><span class="na">getStaticOnly</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">webResourceSet</span><span class="o">.</span><span class="na">getResource</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">result</span><span class="o">.</span><span class="na">exists</span><span class="o">())</span> <span class="o">{</span>
+                        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+                    <span class="o">}</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">virtual</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="k">if</span> <span class="o">(</span><span class="n">result</span><span class="o">.</span><span class="na">isVirtual</span><span class="o">())</span> <span class="o">{</span>
+                            <span class="n">virtual</span> <span class="o">=</span> <span class="n">result</span><span class="o">;</span>
+                        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">main</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">webResourceSet</span><span class="o">))</span> <span class="o">{</span>
+                            <span class="n">mainEmpty</span> <span class="o">=</span> <span class="n">result</span><span class="o">;</span>
+                        <span class="o">}</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+				<span class="c1">// 省略...</span>
+        <span class="c1">// Default is empty resource in main resources</span>
+        <span class="k">return</span> <span class="n">mainEmpty</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	这里遍历不同资源类别,来判断文件是否存在,如果存在就返回,然后放入缓存中.至于从非缓存中获取的逻辑就上面<code class="language-plaintext highlighter-rouge">getResourceInternal</code>的逻辑,就不罗嗦了.</p>
+
+<p>​	嗯,这个有啥用呢?还是未解决404的问题呀,别急快了.</p>
+
+<h1 id="八被遗忘的静态资源监听器staticresourceconfigurer">八、被遗忘的静态资源监听器(StaticResourceConfigurer)</h1>
+
+<p>​	少侠是否记得在创建tomcat的时候在servletContext中添加了个这个监听器呢?</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory</span>
+<span class="kd">protected</span> <span class="kt">void</span> <span class="nf">prepareContext</span><span class="o">(</span><span class="nc">Host</span> <span class="n">host</span><span class="o">,</span> <span class="nc">ServletContextInitializer</span><span class="o">[]</span> <span class="n">initializers</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// 省略...</span>
+		<span class="n">context</span><span class="o">.</span><span class="na">addLifecycleListener</span><span class="o">(</span><span class="k">new</span> <span class="nc">StaticResourceConfigurer</span><span class="o">(</span><span class="n">context</span><span class="o">));</span>
+		<span class="c1">// 省略...</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	再来看看这个监听器的逻辑吧.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// TomcatServletWebServerFactory$StaticResourceConfigurer</span>
+<span class="kd">private</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">StaticResourceConfigurer</span> <span class="kd">implements</span> <span class="nc">LifecycleListener</span> <span class="o">{</span>
+
+		<span class="kd">private</span> <span class="kd">final</span> <span class="nc">Context</span> <span class="n">context</span><span class="o">;</span>
+
+		<span class="kd">private</span> <span class="nf">StaticResourceConfigurer</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">context</span> <span class="o">=</span> <span class="n">context</span><span class="o">;</span>
+		<span class="o">}</span>
+
+		<span class="nd">@Override</span>
+		<span class="kd">public</span> <span class="kt">void</span> <span class="nf">lifecycleEvent</span><span class="o">(</span><span class="nc">LifecycleEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">event</span><span class="o">.</span><span class="na">getType</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="nc">Lifecycle</span><span class="o">.</span><span class="na">CONFIGURE_START_EVENT</span><span class="o">))</span> <span class="o">{</span>
+				<span class="n">addResourceJars</span><span class="o">(</span><span class="n">getUrlsOfJarsWithMetaInfResources</span><span class="o">());</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addResourceJars</span><span class="o">(</span><span class="nc">List</span><span class="o">&lt;</span><span class="no">URL</span><span class="o">&gt;</span> <span class="n">resourceJarUrls</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">for</span> <span class="o">(</span><span class="no">URL</span> <span class="n">url</span> <span class="o">:</span> <span class="n">resourceJarUrls</span><span class="o">)</span> <span class="o">{</span>
+				<span class="nc">String</span> <span class="n">path</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="na">getPath</span><span class="o">();</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">path</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="s">".jar"</span><span class="o">)</span> <span class="o">||</span> <span class="n">path</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="s">".jar!/"</span><span class="o">))</span> <span class="o">{</span>
+					<span class="nc">String</span> <span class="n">jar</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="na">toString</span><span class="o">();</span>
+					<span class="k">if</span> <span class="o">(!</span><span class="n">jar</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"jar:"</span><span class="o">))</span> <span class="o">{</span>
+						<span class="c1">// A jar file in the file system. Convert to Jar URL.</span>
+						<span class="n">jar</span> <span class="o">=</span> <span class="s">"jar:"</span> <span class="o">+</span> <span class="n">jar</span> <span class="o">+</span> <span class="s">"!/"</span><span class="o">;</span>
+					<span class="o">}</span>
+					<span class="n">addResourceSet</span><span class="o">(</span><span class="n">jar</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="k">else</span> <span class="o">{</span>
+					<span class="n">addResourceSet</span><span class="o">(</span><span class="n">url</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addResourceSet</span><span class="o">(</span><span class="nc">String</span> <span class="n">resource</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">isInsideNestedJar</span><span class="o">(</span><span class="n">resource</span><span class="o">))</span> <span class="o">{</span>
+					<span class="c1">// It's a nested jar but we now don't want the suffix because Tomcat</span>
+					<span class="c1">// is going to try and locate it as a root URL (not the resource</span>
+					<span class="c1">// inside it)</span>
+					<span class="n">resource</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">resource</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">-</span> <span class="mi">2</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="no">URL</span> <span class="n">url</span> <span class="o">=</span> <span class="k">new</span> <span class="no">URL</span><span class="o">(</span><span class="n">resource</span><span class="o">);</span>
+				<span class="nc">String</span> <span class="n">path</span> <span class="o">=</span> <span class="s">"/META-INF/resources"</span><span class="o">;</span>
+				<span class="k">this</span><span class="o">.</span><span class="na">context</span><span class="o">.</span><span class="na">getResources</span><span class="o">().</span><span class="na">createWebResourceSet</span><span class="o">(</span><span class="nc">ResourceSetType</span><span class="o">.</span><span class="na">RESOURCE_JAR</span><span class="o">,</span> <span class="s">"/"</span><span class="o">,</span> <span class="n">url</span><span class="o">,</span> <span class="n">path</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+				<span class="c1">// Ignore (probably not a directory)</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isInsideNestedJar</span><span class="o">(</span><span class="nc">String</span> <span class="n">dir</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">return</span> <span class="n">dir</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="s">"!/"</span><span class="o">)</span> <span class="o">&lt;</span> <span class="n">dir</span><span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">"!/"</span><span class="o">);</span>
+		<span class="o">}</span>
+
+	<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	无论逻辑怎么变化,最后监听器的代码都会走到<code class="language-plaintext highlighter-rouge">this.context.getResources().createWebResourceSet(ResourceSetType.RESOURCE_JAR, "/", url, path);</code>这句话来.</p>
+
+<p>​	看到<code class="language-plaintext highlighter-rouge">ResourceSetType.RESOURCE_JAR</code>这个常量是否有点感觉呢?没感觉就脱掉衣服再看看.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// StandardRoot </span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">createWebResourceSet</span><span class="o">(</span><span class="nc">ResourceSetType</span> <span class="n">type</span><span class="o">,</span> <span class="nc">String</span> <span class="n">webAppMount</span><span class="o">,</span>
+            <span class="no">URL</span> <span class="n">url</span><span class="o">,</span> <span class="nc">String</span> <span class="n">internalPath</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">BaseLocation</span> <span class="n">baseLocation</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BaseLocation</span><span class="o">(</span><span class="n">url</span><span class="o">);</span>
+        <span class="n">createWebResourceSet</span><span class="o">(</span><span class="n">type</span><span class="o">,</span> <span class="n">webAppMount</span><span class="o">,</span> <span class="n">baseLocation</span><span class="o">.</span><span class="na">getBasePath</span><span class="o">(),</span>
+                <span class="n">baseLocation</span><span class="o">.</span><span class="na">getArchivePath</span><span class="o">(),</span> <span class="n">internalPath</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">createWebResourceSet</span><span class="o">(</span><span class="nc">ResourceSetType</span> <span class="n">type</span><span class="o">,</span> <span class="nc">String</span> <span class="n">webAppMount</span><span class="o">,</span>
+            <span class="nc">String</span> <span class="n">base</span><span class="o">,</span> <span class="nc">String</span> <span class="n">archivePath</span><span class="o">,</span> <span class="nc">String</span> <span class="n">internalPath</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">List</span><span class="o">&lt;</span><span class="nc">WebResourceSet</span><span class="o">&gt;</span> <span class="n">resourceList</span><span class="o">;</span>
+        <span class="nc">WebResourceSet</span> <span class="n">resourceSet</span><span class="o">;</span>
+
+        <span class="k">switch</span> <span class="o">(</span><span class="n">type</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">case</span> <span class="nl">PRE:</span>
+                <span class="n">resourceList</span> <span class="o">=</span> <span class="n">preResources</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">case</span> <span class="nl">CLASSES_JAR:</span>
+                <span class="n">resourceList</span> <span class="o">=</span> <span class="n">classResources</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">case</span> <span class="nl">RESOURCE_JAR:</span>
+                <span class="n">resourceList</span> <span class="o">=</span> <span class="n">jarResources</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">case</span> <span class="nl">POST:</span>
+                <span class="n">resourceList</span> <span class="o">=</span> <span class="n">postResources</span><span class="o">;</span>
+                <span class="k">break</span><span class="o">;</span>
+            <span class="k">default</span><span class="o">:</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span>
+                        <span class="n">sm</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">"standardRoot.createUnknownType"</span><span class="o">,</span> <span class="n">type</span><span class="o">));</span>
+        <span class="o">}</span>
+      	<span class="c1">// 省略</span>
+        <span class="n">resourceList</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">resourceSet</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	是不是这一切都园回去了？是不是感觉疑惑都没了?如果还是不解在去看看资源解析的那块儿.</p>
+
+<h1 id="九真相">九、真相</h1>
+
+<p>​	为甚么是404呢?那是因为在StandardRoot里面的resourceList中不存在指定的根路径,所以是404.又要有小伙伴要杠了,说MATE-INFO目录下面的都没问题.</p>
+
+<p>​	是,没问题.因为springBoot把这个路径加进去了.不信你看.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// StaticResourceConfigurer</span>
+<span class="kd">private</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">StaticResourceConfigurer</span> <span class="kd">implements</span> <span class="nc">LifecycleListener</span> <span class="o">{</span>
+
+		<span class="kd">private</span> <span class="kd">final</span> <span class="nc">Context</span> <span class="n">context</span><span class="o">;</span>
+
+		<span class="kd">private</span> <span class="nf">StaticResourceConfigurer</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">context</span> <span class="o">=</span> <span class="n">context</span><span class="o">;</span>
+		<span class="o">}</span>
+
+		<span class="nd">@Override</span>
+		<span class="kd">public</span> <span class="kt">void</span> <span class="nf">lifecycleEvent</span><span class="o">(</span><span class="nc">LifecycleEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">event</span><span class="o">.</span><span class="na">getType</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="nc">Lifecycle</span><span class="o">.</span><span class="na">CONFIGURE_START_EVENT</span><span class="o">))</span> <span class="o">{</span>
+				<span class="n">addResourceJars</span><span class="o">(</span><span class="n">getUrlsOfJarsWithMetaInfResources</span><span class="o">());</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addResourceJars</span><span class="o">(</span><span class="nc">List</span><span class="o">&lt;</span><span class="no">URL</span><span class="o">&gt;</span> <span class="n">resourceJarUrls</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// 省略</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">void</span> <span class="nf">addResourceSet</span><span class="o">(</span><span class="nc">String</span> <span class="n">resource</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// 省略</span>
+		<span class="o">}</span>
+
+		<span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isInsideNestedJar</span><span class="o">(</span><span class="nc">String</span> <span class="n">dir</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">return</span> <span class="n">dir</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="s">"!/"</span><span class="o">)</span> <span class="o">&lt;</span> <span class="n">dir</span><span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">"!/"</span><span class="o">);</span>
+		<span class="o">}</span>
+
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	在<code class="language-plaintext highlighter-rouge">getUrlsOfJarsWithMetaInfResources</code>方法里面就有这个路径.逻辑简单就不贴出来了.</p>
+
+<h2 id="91-如何解决404">9.1 如何解决404</h2>
+
+<p>​	根据以上的分析,可以和spring一样弄个监听器,在resourceList添加指定的路径.最简单暴力的方法如下:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Controller</span>
+<span class="nd">@EnableAutoConfiguration</span>
+<span class="nd">@Configuration</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Main</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="nc">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">SpringApplication</span><span class="o">.</span><span class="na">run</span><span class="o">(</span><span class="nc">Main</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="n">args</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">"/test-static"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">testStatic</span><span class="o">(){</span>
+        <span class="k">return</span> <span class="s">"index-static"</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">"/test-public"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">testPublic</span><span class="o">(){</span>
+        <span class="k">return</span> <span class="s">"index-public"</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">"/test-resources"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">testResources</span><span class="o">(){</span>
+        <span class="k">return</span> <span class="s">"index-resources"</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">"/test-meta"</span><span class="o">)</span>
+    <span class="kd">public</span> <span class="nc">String</span> <span class="nf">testMeta</span><span class="o">(){</span>
+        <span class="k">return</span> <span class="s">"index-meta"</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Bean</span>
+    <span class="kd">public</span> <span class="nc">TomcatServletWebServerFactory</span> <span class="nf">getTomcatServletWebServerFactory</span><span class="o">(){</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">AdvTomcatServletWebServerFactory</span><span class="o">();</span>
+    <span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>自定义工厂:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">AdvTomcatServletWebServerFactory</span> <span class="kd">extends</span> <span class="nc">TomcatServletWebServerFactory</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="nc">Context</span> <span class="n">context</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">AdvTomcatServletWebServerFactory</span><span class="o">(){</span>
+        <span class="n">getContextLifecycleListeners</span><span class="o">().</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="nc">AdvResourceListener</span><span class="o">());</span>
+    <span class="o">}</span>
+		<span class="c1">// 这个方法是 spring留下的模板方法</span>
+  	<span class="c1">// 可以通过这个方法进行扩展</span>
+    <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">postProcessContext</span><span class="o">(</span><span class="nc">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">context</span> <span class="o">=</span> <span class="n">context</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span>  <span class="kd">class</span> <span class="nc">AdvResourceListener</span> <span class="kd">implements</span> <span class="nc">LifecycleListener</span><span class="o">{</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">lifecycleEvent</span><span class="o">(</span><span class="nc">LifecycleEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">event</span><span class="o">.</span><span class="na">getType</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="nc">Lifecycle</span><span class="o">.</span><span class="na">CONFIGURE_START_EVENT</span><span class="o">))</span> <span class="o">{</span>
+                <span class="kd">final</span> <span class="no">URL</span> <span class="n">resource</span> <span class="o">=</span> <span class="nc">AdvTomcatServletWebServerFactory</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">().</span><span class="na">getResource</span><span class="o">(</span><span class="s">"."</span><span class="o">);</span>
+                <span class="kd">final</span> <span class="nc">WebResourceRoot</span> <span class="n">resources</span> <span class="o">=</span> <span class="nc">AdvTomcatServletWebServerFactory</span><span class="o">.</span><span class="na">this</span><span class="o">.</span><span class="na">context</span><span class="o">.</span><span class="na">getResources</span><span class="o">();</span>
+                <span class="n">resources</span><span class="o">.</span><span class="na">createWebResourceSet</span><span class="o">(</span><span class="nc">WebResourceRoot</span><span class="o">.</span><span class="na">ResourceSetType</span><span class="o">.</span><span class="na">RESOURCE_JAR</span><span class="o">,</span> <span class="s">"/"</span><span class="o">,</span> <span class="n">resource</span><span class="o">,</span> <span class="s">"/static"</span><span class="o">);</span>
+                <span class="n">resources</span><span class="o">.</span><span class="na">createWebResourceSet</span><span class="o">(</span><span class="nc">WebResourceRoot</span><span class="o">.</span><span class="na">ResourceSetType</span><span class="o">.</span><span class="na">RESOURCE_JAR</span><span class="o">,</span> <span class="s">"/"</span><span class="o">,</span> <span class="n">resource</span><span class="o">,</span> <span class="s">"/public"</span><span class="o">);</span>
+                <span class="n">resources</span><span class="o">.</span><span class="na">createWebResourceSet</span><span class="o">(</span><span class="nc">WebResourceRoot</span><span class="o">.</span><span class="na">ResourceSetType</span><span class="o">.</span><span class="na">RESOURCE_JAR</span><span class="o">,</span> <span class="s">"/"</span><span class="o">,</span> <span class="n">resource</span><span class="o">,</span> <span class="s">"/resources"</span><span class="o">);</span>
+            <span class="o">}</span>
+
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	通过自己的工厂替换掉spring的工厂,实现注册自己的监听器,当然方法还有很多,如果你熟悉tomcat的启动流程的话.</p>
+
+<h1 id="十小结">十、小结</h1>
+
+<p>​	在springBoot的懒人套餐下,出现问题往往会让人防不胜防呀,比如这个404,根本没有任何信息说哪里有问题(除非是开了debug日志).</p>
+
+<p>​	本来就想谢谢解决方案的,结果写了这么多,吃饭了.</p>
+:ET

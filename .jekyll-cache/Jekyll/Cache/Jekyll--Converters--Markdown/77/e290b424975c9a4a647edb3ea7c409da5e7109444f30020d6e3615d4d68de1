@@ -1,0 +1,118 @@
+I"�A<h1 id="一前言">一、前言</h1>
+
+<p>​	最近落在手上一个对接任务,对方平台采用的是webservice,用.net写的.刚开始看文档的时候,感觉挺简单的,就几个xml发过去发过来的(之前没搞过webservice,全是个人愚见.).</p>
+
+<p>​	但后面出现一个问题,接口上注明的参数类型是binarybase64,按照文档示例,不管怎么序列化都不对,一直在提示参数不对,不能序列化.后面才发现,这个二进制序列化格式是用的c#独有的序列化方式,是不跨平台的.emmm</p>
+
+<h1 id="二binaryformatter">二、BinaryFormatter</h1>
+
+<p>​	在c#里面常用的序列化方式是<code class="language-plaintext highlighter-rouge">BinaryFormatter</code>,这种序列化方式,是二进制形式,跟protocbuf差不多,但性能上要比protocbuf要好点.对比json就更不用说了.但为了提升性能,必将在其他地方作出让步,比如在跨语言上,这个就行不通了,其他语言不认识这个.为了完成这个对接任务,没有办法只能硬着头皮上了,在java中构造出<code class="language-plaintext highlighter-rouge">BinaryFormatter</code>的数据结构.</p>
+
+<h1 id="三采用string对象示例">三、采用string对象示例</h1>
+
+<p>​	在翻遍c#官方文档都没有翻到关于<code class="language-plaintext highlighter-rouge">BinaryFormatter</code>的数据结构的情况下,只能在c#中序列化出来进行肉眼观察.</p>
+
+<ol>
+  <li>
+    <p>string对象的数据头</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">byte</span><span class="o">[]</span> <span class="no">FRONT_BYTES</span>  <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[]{</span>
+            <span class="o">(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x01</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0xFF</span><span class="o">,</span>
+            <span class="o">(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0xFF</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0xFF</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0xFF</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x01</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,</span>
+            <span class="o">(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x06</span><span class="o">,</span>
+            <span class="o">(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x01</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span>
+    <span class="o">};</span>
+</code></pre></div>    </div>
+
+    <p>前面22个字节是固定的,个人猜测是类型的信息.</p>
+
+    <ol>
+      <li>string对象的结束符</li>
+    </ol>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">byte</span> <span class="no">END_BYTE</span> <span class="o">=</span> <span class="mh">0x0B</span><span class="o">;</span>
+</code></pre></div>    </div>
+
+    <p>这个也是固定的,个人猜测为结束符.</p>
+  </li>
+</ol>
+
+<p>​	头和尾头猜测出来,那么中间的肯定是数据的内容,经过多次测试,果不其然,中间的为字符串的内容.但在测试的过程发现有几个字节转不出字符串.这几个字节刚好在数据头的后面.</p>
+
+<p>​	那么,可以肯定一点的是,这几个转不出来的字节是数据的长度.但是这个长度是怎么算出来的呢,所实话还还是猜了一段时间,在小于128字节的内容中,长度为128以内的数字.但一旦查过128字节就开始出现负数了.</p>
+
+<p>​	经过一段时间的测试,发现长度是才用128进制的,至于为什么🤔️会出现负数,可能是一种标记吧,标记后面还有数据长度的数据,直到最后一个为正为止.</p>
+
+<ol>
+  <li>
+    <p>长度计算方法</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>		<span class="kd">private</span> <span class="kd">static</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">lenToByte</span><span class="o">(</span><span class="kt">int</span> <span class="n">len</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span><span class="o">(</span> <span class="n">len</span> <span class="o">==</span><span class="mi">0</span> <span class="o">){</span>
+            <span class="k">return</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[]{</span><span class="mh">0x00</span><span class="o">};</span>
+        <span class="o">}</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">bytes</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[</span><span class="mi">10</span><span class="o">];</span>
+        <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">while</span> <span class="o">(</span><span class="n">len</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">bytes</span><span class="o">[</span><span class="n">count</span><span class="o">]</span> <span class="o">=</span> <span class="o">(</span><span class="kt">byte</span><span class="o">)</span> <span class="o">(</span><span class="n">len</span> <span class="o">%</span> <span class="mi">128</span><span class="o">);</span>
+            <span class="n">len</span> <span class="o">/=</span> <span class="mi">128</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">len</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">bytes</span><span class="o">[</span><span class="n">count</span><span class="o">]</span> <span class="o">+=</span> <span class="mh">0x80</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="n">count</span><span class="o">++;</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">copyOfRange</span><span class="o">(</span><span class="n">bytes</span><span class="o">,</span><span class="mi">0</span><span class="o">,</span> <span class="n">count</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>完整的字符串序列化方法</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">byte</span><span class="o">[]</span> <span class="no">FRONT_BYTES</span>  <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[]{</span>
+  <span class="o">(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x01</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0xFF</span><span class="o">,</span>
+  <span class="o">(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0xFF</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0xFF</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0xFF</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x01</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,</span>
+  <span class="o">(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x06</span><span class="o">,</span>
+  <span class="o">(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x01</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span><span class="o">,(</span><span class="kt">byte</span><span class="o">)</span><span class="mh">0x00</span>
+<span class="o">};</span>
+<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">byte</span> <span class="no">END_BYTE</span> <span class="o">=</span> <span class="mh">0x0B</span><span class="o">;</span> 
+<span class="kd">private</span> <span class="kd">static</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">stringToBytes</span><span class="o">(</span><span class="nc">String</span> <span class="n">value</span><span class="o">)</span>  <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="kt">byte</span><span class="o">[]</span> <span class="n">contentBytes</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">getBytes</span><span class="o">();</span>
+            <span class="kd">final</span> <span class="kt">byte</span><span class="o">[]</span> <span class="n">lenBytes</span> <span class="o">=</span> <span class="n">lenToByte</span><span class="o">(</span><span class="n">contentBytes</span><span class="o">.</span><span class="na">length</span><span class="o">);</span>
+            <span class="nc">ByteArrayOutputStream</span> <span class="n">byteArrayOutputStream</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ByteArrayOutputStream</span><span class="o">(</span><span class="mi">64</span><span class="o">);</span>
+            <span class="n">byteArrayOutputStream</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="no">FRONT_BYTES</span><span class="o">);</span>
+            <span class="n">byteArrayOutputStream</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">lenBytes</span><span class="o">);</span>
+            <span class="n">byteArrayOutputStream</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">contentBytes</span><span class="o">);</span>
+            <span class="n">byteArrayOutputStream</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="no">END_BYTE</span><span class="o">);</span>
+            <span class="k">return</span> <span class="n">byteArrayOutputStream</span><span class="o">.</span><span class="na">toByteArray</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="k">return</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[]{};</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    
+    
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">lenToByte</span><span class="o">(</span><span class="kt">int</span> <span class="n">len</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span><span class="o">(</span> <span class="n">len</span> <span class="o">==</span><span class="mi">0</span> <span class="o">){</span>
+            <span class="k">return</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[]{</span><span class="mh">0x00</span><span class="o">};</span>
+        <span class="o">}</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">b</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[</span><span class="mi">10</span><span class="o">];</span>
+        <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">while</span> <span class="o">(</span><span class="n">len</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">b</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="o">(</span><span class="kt">byte</span><span class="o">)</span> <span class="o">(</span><span class="n">len</span> <span class="o">%</span> <span class="mi">128</span><span class="o">);</span>
+            <span class="n">len</span> <span class="o">/=</span> <span class="mi">128</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">len</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">b</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">+=</span> <span class="mh">0x80</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="n">i</span><span class="o">++;</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="nc">Arrays</span><span class="o">.</span><span class="na">copyOfRange</span><span class="o">(</span><span class="n">b</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span>
+    <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h1 id="五总结">五、总结</h1>
+
+<p>能不能不要玩webservice了,好累呀,好复杂呀,不想搞呀.</p>
+:ET

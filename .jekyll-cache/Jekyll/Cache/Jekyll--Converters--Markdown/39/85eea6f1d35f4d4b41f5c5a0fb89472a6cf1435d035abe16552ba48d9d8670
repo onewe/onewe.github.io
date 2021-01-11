@@ -1,0 +1,145 @@
+I"�6<h1 id="一cdc概念">一、CDC概念</h1>
+
+<p>​	CDC(Changing Data Capture)意思是捕捉变化的数据,用流的方式持续捕捉.这与ETC有着本质上的区别,ETL则是定时拉取数据.</p>
+
+<p>​	ETL 概念上是:抽取(E)、转换(T)、导入(L),ETL现在是比较成熟的,方案也比较多.但定时抽取就会意味着有时效性的问题,如果有一种方案,数据库数据出现更改就自动同步到OLAP引擎里面,岂不是美滋滋?那么CDC就是为此而生的,持续不断的监听数据库的变化情况,一旦变化就立马发出消息进行同步消息,但这种方案也并非完美,如遇到大事务的SQL,批量更新的这种,也会有延迟的问题,权衡一下估计两者差不多.</p>
+
+<p>​	市面上常用的数据库有Mysql,PostgreSql等,Mysql的CDC方案比较多,通过监听binlog实现.而Postgresql的CDC方案则比较少,至少从百度(🐶️)上找的资料来看.</p>
+
+<h1 id="二postgresql-cdc-方案">二、Postgresql CDC 方案</h1>
+
+<p>​	Postgresql 实现CDC是通过逻辑复制实现的,与Mysql 的binlog有异曲同工之处.详情请看官方<a href="http://postgres.cn/docs/11/logical-replication.html">文档</a>.只要在pgsql的配置文件中<code class="language-plaintext highlighter-rouge">wal_level</code>属性设置为<code class="language-plaintext highlighter-rouge">logical</code>就配置好了,再在数据库中创建订阅,以及复制槽,以上操作比较简单,不再记录,详情查看官方文档.</p>
+
+<p>​	在pgsql中开启了逻辑复制,但还差一个逻辑解码输出插件.市面上解码插件有3款,当然也可以自己写<a href="http://postgres.cn/docs/11/logicaldecoding-output-plugin.html">解码插件</a>.</p>
+
+<ul>
+  <li>
+    <p>逻辑解码插件列表</p>
+
+    <ol>
+      <li>
+        <p>wal2json</p>
+
+        <p>这款插件会把消息解码成json格式,方便于消费端进行消费.一个事务一条消息,github 地址:https://github.com/eulerto/wal2json.</p>
+
+        <p>优点:</p>
+
+        <p>​	消息是json格式方便使用</p>
+
+        <p>缺点:</p>
+
+        <p>​	对于大事务消息,比如一次性修改几十万条数据,会耗尽内存.</p>
+
+        <p>​	没有现场的插件,需要自行编译.在centos上进行编译有点点麻烦.</p>
+
+        <p>java端的消费者代码可以参考迪士尼的项目:https://github.com/disneystreaming/pg2k4j</p>
+      </li>
+      <li>
+        <p>decoderbufs</p>
+
+        <p>消息格式为protobuf,比json省带宽.一个事务多条消息.github地址:https://github.com/xstevens/decoderbufs,现在这个插件原作者已经不维护了.可以用debezium维护的版本https://github.com/debezium/postgres-decoderbufs.</p>
+
+        <p>优点:</p>
+
+        <p>​	大事务不会耗尽内存,效率比json高</p>
+
+        <p>缺点:</p>
+
+        <p>​	在centos上不好编译,编译劝退.服务器不建议使用centos,免得各种编译问题.(关键是编译好了,在java端一读取消息就崩,至今没找到原因,退了,退了.)</p>
+
+        <p>java端的消费者代码可以参考debezium项目中的connector-postgresql:https://github.com/debezium/debezium</p>
+      </li>
+      <li>
+        <p>pgoutput</p>
+
+        <p>该插件是官方的,只能适用于10+的版本,如果是10以下的版本还是劝退吧.该插件用起来目前感觉比以上两款都要爽,不用编译,官方自带,没有内存耗尽的问题.</p>
+
+        <p>java端的消费者代码可以参考debezium项目中的connector-postgresql:https://github.com/debezium/debezium</p>
+      </li>
+    </ol>
+
+    <p>以上3款插件,笔者都试过,最终选择了官方的方案,用起来还是挺爽的.只不过该消息有单独的格式,要自己去解析.具体格式可以参考官方文档,http://postgres.cn/docs/11/protocol-logicalrep-message-formats.html.</p>
+  </li>
+</ul>
+
+<h1 id="三java-示例">三、JAVA 示例</h1>
+
+<p>要使用官方的插件分以下几个步骤:</p>
+
+<ol>
+  <li>
+    <p>创建订阅</p>
+
+    <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="n">PUBLICATION</span> <span class="n">test</span> <span class="k">FOR</span> <span class="k">TABLE</span> <span class="k">ONLY</span> <span class="nv">"user_info"</span> 
+ <span class="k">WITH</span> <span class="p">(</span><span class="n">publish</span> <span class="o">=</span> <span class="s1">'insert,update,delete'</span><span class="p">);</span>
+ <span class="c1">-- 为表user_info创建名称为test的订阅,发布insert,update,delete消息</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>创建复制槽</p>
+
+    <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">CREATE_REPLICATION_SLOT</span> <span class="n">test</span> <span class="k">TEMPORARY</span> <span class="n">LOGICAL</span> <span class="n">pgoutput</span><span class="p">;</span>
+<span class="c1">-- 创建名称为test的复制槽</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Java demo</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> 		<span class="nc">String</span> <span class="n">url</span> <span class="o">=</span> <span class="s">"jdbc:postgresql://localhost:5432/test"</span><span class="o">;</span>
+    <span class="nc">Properties</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Properties</span><span class="o">();</span>
+    <span class="nc">PGProperty</span><span class="o">.</span><span class="na">USER</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">props</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">);</span>
+    <span class="nc">PGProperty</span><span class="o">.</span><span class="na">PASSWORD</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">props</span><span class="o">,</span> <span class="s">"postgres"</span><span class="o">);</span>
+    <span class="nc">PGProperty</span><span class="o">.</span><span class="na">ASSUME_MIN_SERVER_VERSION</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">props</span><span class="o">,</span> <span class="s">"9.4"</span><span class="o">);</span>
+    <span class="nc">PGProperty</span><span class="o">.</span><span class="na">REPLICATION</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">props</span><span class="o">,</span> <span class="s">"database"</span><span class="o">);</span>
+    <span class="nc">PGProperty</span><span class="o">.</span><span class="na">PREFER_QUERY_MODE</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">props</span><span class="o">,</span> <span class="s">"simple"</span><span class="o">);</span>
+   
+    <span class="nc">Connection</span> <span class="n">con</span> <span class="o">=</span> <span class="nc">DriverManager</span><span class="o">.</span><span class="na">getConnection</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">props</span><span class="o">);</span>
+    <span class="nc">PGConnection</span> <span class="n">replConnection</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="na">unwrap</span><span class="o">(</span><span class="nc">PGConnection</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+   
+    <span class="c1">//some changes after create replication slot to demonstrate receive it</span>
+    <span class="n">sqlConnection</span><span class="o">.</span><span class="na">setAutoCommit</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+    <span class="nc">Statement</span> <span class="n">st</span> <span class="o">=</span> <span class="n">sqlConnection</span><span class="o">.</span><span class="na">createStatement</span><span class="o">();</span>
+    <span class="n">st</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="s">"insert into test_logic_table(name) values('first tx changes')"</span><span class="o">);</span>
+    <span class="n">st</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+   
+    <span class="n">st</span> <span class="o">=</span> <span class="n">sqlConnection</span><span class="o">.</span><span class="na">createStatement</span><span class="o">();</span>
+    <span class="n">st</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="s">"update test_logic_table set name = 'second tx change' where pk = 1"</span><span class="o">);</span>
+    <span class="n">st</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+   
+    <span class="n">st</span> <span class="o">=</span> <span class="n">sqlConnection</span><span class="o">.</span><span class="na">createStatement</span><span class="o">();</span>
+    <span class="n">st</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="s">"delete from test_logic_table where pk = 1"</span><span class="o">);</span>
+    <span class="n">st</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+   
+    <span class="nc">PGReplicationStream</span> <span class="n">stream</span> <span class="o">=</span>
+        <span class="n">pgConnection</span><span class="o">.</span><span class="na">getReplicationAPI</span><span class="o">()</span>
+                    <span class="o">.</span><span class="na">replicationStream</span><span class="o">()</span>
+                    <span class="o">.</span><span class="na">logical</span><span class="o">()</span>
+                    <span class="o">.</span><span class="na">withSlotName</span><span class="o">(</span><span class="s">"test"</span><span class="o">)</span>
+                    <span class="o">.</span><span class="na">withSlotOption</span><span class="o">(</span><span class="s">"proto_version"</span><span class="o">,</span> <span class="mi">1</span><span class="o">)</span>
+                    <span class="o">.</span><span class="na">withSlotOption</span><span class="o">(</span><span class="s">"publication_names"</span><span class="o">,</span> <span class="s">"test"</span><span class="o">)</span>
+                    <span class="o">.</span><span class="na">withStartPosition</span><span class="o">(</span><span class="n">lastLsn</span><span class="o">)</span>
+                    <span class="o">.</span><span class="na">withStatusInterval</span><span class="o">(</span><span class="nc">Math</span><span class="o">.</span><span class="na">toIntExact</span><span class="o">(</span><span class="nc">Duration</span><span class="o">.</span><span class="na">ofSeconds</span><span class="o">(</span><span class="mi">10</span><span class="o">).</span><span class="na">toMillis</span><span class="o">()),</span> <span class="nc">TimeUnit</span><span class="o">.</span><span class="na">MILLISECONDS</span><span class="o">)</span>
+                    <span class="o">.</span><span class="na">start</span><span class="o">();</span>
+   
+    <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+      <span class="c1">//non blocking receive message</span>
+      <span class="nc">ByteBuffer</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="na">readPending</span><span class="o">();</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">msg</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">TimeUnit</span><span class="o">.</span><span class="na">MILLISECONDS</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10L</span><span class="o">);</span>
+        <span class="k">continue</span><span class="o">;</span>
+      <span class="o">}</span>
+      <span class="kt">int</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="na">arrayOffset</span><span class="o">();</span>
+      <span class="kt">byte</span><span class="o">[]</span> <span class="n">source</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="na">array</span><span class="o">();</span>
+      <span class="kt">int</span> <span class="n">length</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="na">length</span> <span class="o">-</span> <span class="n">offset</span><span class="o">;</span>
+      <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="k">new</span> <span class="nc">String</span><span class="o">(</span><span class="n">source</span><span class="o">,</span> <span class="n">offset</span><span class="o">,</span> <span class="n">length</span><span class="o">));</span>
+   
+      <span class="c1">//feedback</span>
+      <span class="n">stream</span><span class="o">.</span><span class="na">setAppliedLSN</span><span class="o">(</span><span class="n">stream</span><span class="o">.</span><span class="na">getLastReceiveLSN</span><span class="o">());</span>
+      <span class="n">stream</span><span class="o">.</span><span class="na">setFlushedLSN</span><span class="o">(</span><span class="n">stream</span><span class="o">.</span><span class="na">getLastReceiveLSN</span><span class="o">());</span>
+    <span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>关于java示例中的用法,可以查看jdbc的文档:https://jdbc.postgresql.org/documentation/head/replication.html</p>
+:ET

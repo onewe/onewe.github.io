@@ -1,0 +1,8 @@
+I"�<h1 id="一前言">一、前言</h1>
+
+<p>list集合作为在日常使用中是频率较高的一个类,接下来会用比较啰嗦的形式,做个源码阅读的笔记.list直接之类关系如下,不涉及到javax中的类.</p>
+
+<p><img src="./img/List_relationship.jpg" alt="image" /></p>
+
+<p>如上图所示,直接子类在util包中的有5个,这章将会重点解读一下Arraylist,</p>
+:ET
