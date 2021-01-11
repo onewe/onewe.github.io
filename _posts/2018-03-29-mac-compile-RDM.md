@@ -1,5 +1,6 @@
 ---
 title: Mac OS X下编译Redis Desktop Manager(RDM)
+key: 2018-03-29-mac-compile-RDM.md
 date: 2018/3/29 16:39:25
 tags:
 - RDM
