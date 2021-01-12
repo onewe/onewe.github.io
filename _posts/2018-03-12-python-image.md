@@ -2,6 +2,7 @@
 title: python新手38行代码挑战bad apple 
 date: 2018/3/12 23:48:15
 comments: true
+key: python-image-2018-03-12
 tags: bad apple
 categories: python
 cover: http://upload-images.jianshu.io/upload_images/8958298-af9844d5869bd35e..jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240

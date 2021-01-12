@@ -1,6 +1,7 @@
 ---
 title: python学习笔记-list
 date: 2018/3/26 17:55:34
+key: python-list-2018-03-26
 comments: true
 tags: python-list
 categories: python

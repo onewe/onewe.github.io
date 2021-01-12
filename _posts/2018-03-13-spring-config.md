@@ -2,6 +2,7 @@
 title:  spring的那点事-yml环境变量随笔
 date: 2018/3/13 11:25:25
 comments: true
+key: spring-config-2018-03-13
 tags: spring
 categories: java
 cover: http://upload-images.jianshu.io/upload_images/8958298-a8eea1592699dd38..jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240
