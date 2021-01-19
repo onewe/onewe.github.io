@@ -1,0 +1,84 @@
+<h1 id="一前言">一、前言</h1>
+
+<p>在postgresql中有个比较骚的功能全文索引,这个功能虽然比不上搜索引擎,但简单的需求还是能够满足的.由于国内大多都需要进行中文进行检索,所以需要给postgresql安装一个中文分词的插件.目前中文分词的插件有jieba、zhparser,推荐使用zhparser,安装比较简单.</p>
+
+<h1 id="二开始">二、开始</h1>
+
+<ul>
+  <li>环境:
+    <ul>
+      <li>系统: centos7</li>
+      <li>postgresql: 11</li>
+    </ul>
+  </li>
+</ul>
+
+<p>安装gcc:</p>
+
+<p><code class="language-plaintext highlighter-rouge">yum install -y gcc</code></p>
+
+<p>安装g++:</p>
+
+<p><code class="language-plaintext highlighter-rouge">yum install -y gcc-c++</code></p>
+
+<p>安装wget:</p>
+
+<p><code class="language-plaintext highlighter-rouge">yum install -y wget</code></p>
+
+<p>安装clang:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>yum <span class="nb">install</span> <span class="nt">-y</span> centos-release-scl
+yum <span class="nb">install</span> <span class="nt">-y</span> llvm-toolset-7
+yum <span class="nb">install</span> <span class="nt">-y</span> devtoolset-7
+<span class="c">#启用llvm-toolset-7</span>
+scl <span class="nb">enable </span>llvm-toolset-7 bash
+</code></pre></div></div>
+
+<p>安装postgresql依赖:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code> yum <span class="nb">install</span> <span class="nt">-y</span> postgresql11-libs 
+ yum <span class="nb">install</span> <span class="nt">-y</span> postgresql11-devel
+</code></pre></div></div>
+
+<p> 安装SCWS:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget <span class="nt">-q</span> <span class="nt">-O</span> - http://www.xunsearch.com/scws/down/scws-1.2.3.tar.bz2 | <span class="nb">tar </span>xf -
+<span class="nb">cd </span>scws-1.2.3 <span class="p">;</span> ./configure <span class="p">;</span> make <span class="nb">install</span>
+</code></pre></div></div>
+
+<p>下载zhparser源码:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://github.com/amutu/zhparser.git
+</code></pre></div></div>
+
+<p>编译和安装zhparser:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make <span class="nv">PG_CONFIG</span><span class="o">=</span>/usr/pgsql-11/bin/pg_config <span class="o">&amp;&amp;</span> make <span class="nb">install</span>
+<span class="c">#PG_CONFIG 为pgsql的安装路径</span>
+</code></pre></div></div>
+
+<p>以上zhpraser就安装完毕了,可能会遇到llvm的环境问题,只需要按照报错信息建立软链接就好.</p>
+
+<p>下面开始测试</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">//</span><span class="err">创建扩展</span><span class="p">,</span><span class="err">如果遇到权限不足请换</span><span class="n">postgresql</span><span class="err">用户操作</span><span class="p">,</span><span class="err">如果无法打开文件权限不足</span><span class="p">,</span><span class="err">请把对应的目录的用户用户组改为</span><span class="n">postgresql</span>
+<span class="k">CREATE</span> <span class="n">EXTENSION</span> <span class="n">zhparser</span><span class="p">;</span>
+<span class="o">//</span><span class="err">创建</span><span class="n">conf</span>
+<span class="k">CREATE</span> <span class="nb">TEXT</span> <span class="k">SEARCH</span> <span class="n">CONFIGURATION</span> <span class="n">testzhcfg</span> <span class="p">(</span><span class="n">PARSER</span> <span class="o">=</span> <span class="n">zhparser</span><span class="p">);</span>
+<span class="o">//</span><span class="err">添加</span><span class="n">token</span><span class="err">映射</span>
+<span class="k">ALTER</span> <span class="nb">TEXT</span> <span class="k">SEARCH</span> <span class="n">CONFIGURATION</span> <span class="n">testzhcfg</span> <span class="k">ADD</span> <span class="n">MAPPING</span> <span class="k">FOR</span> <span class="n">n</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">l</span> <span class="k">WITH</span> <span class="k">simple</span><span class="p">;</span>
+<span class="o">//</span><span class="err">测试分词效果</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">ts_parse</span><span class="p">(</span><span class="s1">'zhparser'</span><span class="p">,</span> <span class="s1">'hello world! 2010年保障房建设在全国范围内获全面启动，从中央到地方纷纷加大 了保障房的建设和投入力度 。2011年，保障房进入了更大规模的建设阶段。住房城乡建设部党组书记、部长姜伟新去年底在全国住房城乡建设工作会议上表示，要继续推进保障性安居工程建设。'</span><span class="p">);</span>
+<span class="k">SELECT</span> <span class="n">to_tsvector</span><span class="p">(</span><span class="s1">'testzhcfg'</span><span class="p">,</span><span class="s1">'“今年保障房新开工数量虽然有所下调，但实际的年度在建规模以及竣工规模会超以往年份，相对应的对资金的需求也会创历&gt;史纪录。”陈国强说。在他看来，与2011年相比，2012年的保障房建设在资金配套上的压力将更为严峻。'</span><span class="p">);</span>
+<span class="k">SELECT</span> <span class="n">to_tsquery</span><span class="p">(</span><span class="s1">'testzhcfg'</span><span class="p">,</span> <span class="s1">'保障房资金压力'</span><span class="p">);</span>
+
+<span class="o">//</span><span class="err">如果短词效果不理想</span><span class="p">,</span><span class="err">可以开启以下选项</span>
+<span class="k">alter</span> <span class="k">role</span> <span class="k">all</span> <span class="k">set</span> <span class="n">zhparser</span><span class="p">.</span><span class="n">multi_short</span><span class="o">=</span><span class="k">on</span><span class="p">;</span>
+<span class="o">//</span><span class="err">如果需要忽略标点分好</span><span class="p">,</span><span class="err">可以开启以下选项</span>
+<span class="k">alter</span> <span class="k">role</span> <span class="k">all</span> <span class="k">set</span> <span class="n">zhparser</span><span class="p">.</span><span class="n">punctuation_ignore</span><span class="o">=</span><span class="k">on</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>经过测试,在少量数据的情况下,效果没有like稳定,据说在大量数据的情况下,会表现的很不错</p>
+
+<h1 id="三结束">三、结束</h1>
+

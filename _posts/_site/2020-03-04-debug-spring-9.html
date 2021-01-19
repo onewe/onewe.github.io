@@ -1,0 +1,156 @@
+<h1 id="一前言">一、前言</h1>
+
+<p>​	bean是创建好了,但还需要一些属性填充,初始化等操作.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="c1">// 属性填充</span>
+	<span class="n">populateBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">instanceWrapper</span><span class="o">);</span>
+	<span class="c1">// 初始化bean</span>
+	<span class="n">exposedObject</span> <span class="o">=</span> <span class="n">initializeBean</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">exposedObject</span><span class="o">,</span> <span class="n">mbd</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h1 id="二populatebean">二、populateBean</h1>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">populateBean</span><span class="o">(</span><span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="nc">RootBeanDefinition</span> <span class="n">mbd</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">BeanWrapper</span> <span class="n">bw</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// 跳过 null bean 赋值</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">bw</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">mbd</span><span class="o">.</span><span class="na">hasPropertyValues</span><span class="o">())</span> <span class="o">{</span>
+				<span class="k">throw</span> <span class="k">new</span> <span class="nf">BeanCreationException</span><span class="o">(</span>
+						<span class="n">mbd</span><span class="o">.</span><span class="na">getResourceDescription</span><span class="o">(),</span> <span class="n">beanName</span><span class="o">,</span> <span class="s">"Cannot apply property values to null instance"</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="k">else</span> <span class="o">{</span>
+				<span class="c1">// Skip property population phase for null instance.</span>
+				<span class="k">return</span><span class="o">;</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="c1">// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the</span>
+		<span class="c1">// state of the bean before properties are set. This can be used, for example,</span>
+		<span class="c1">// to support styles of field injection.</span>
+		<span class="c1">// 判断是否是拥有InstantiationAwareBeanPostProcessor</span>
+		<span class="k">if</span> <span class="o">(!</span><span class="n">mbd</span><span class="o">.</span><span class="na">isSynthetic</span><span class="o">()</span> <span class="o">&amp;&amp;</span> <span class="n">hasInstantiationAwareBeanPostProcessors</span><span class="o">())</span> <span class="o">{</span>
+			<span class="c1">// 遍历所有BeanPostProcessor</span>
+			<span class="k">for</span> <span class="o">(</span><span class="nc">BeanPostProcessor</span> <span class="n">bp</span> <span class="o">:</span> <span class="n">getBeanPostProcessors</span><span class="o">())</span> <span class="o">{</span>
+				<span class="c1">// 针对InstantiationAwareBeanPostProcessor 进行调用</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">bp</span> <span class="k">instanceof</span> <span class="nc">InstantiationAwareBeanPostProcessor</span><span class="o">)</span> <span class="o">{</span>
+					<span class="nc">InstantiationAwareBeanPostProcessor</span> <span class="n">ibp</span> <span class="o">=</span> <span class="o">(</span><span class="nc">InstantiationAwareBeanPostProcessor</span><span class="o">)</span> <span class="n">bp</span><span class="o">;</span>
+					<span class="k">if</span> <span class="o">(!</span><span class="n">ibp</span><span class="o">.</span><span class="na">postProcessAfterInstantiation</span><span class="o">(</span><span class="n">bw</span><span class="o">.</span><span class="na">getWrappedInstance</span><span class="o">(),</span> <span class="n">beanName</span><span class="o">))</span> <span class="o">{</span>
+						<span class="k">return</span><span class="o">;</span>
+					<span class="o">}</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="nc">PropertyValues</span> <span class="n">pvs</span> <span class="o">=</span> <span class="o">(</span><span class="n">mbd</span><span class="o">.</span><span class="na">hasPropertyValues</span><span class="o">()</span> <span class="o">?</span> <span class="n">mbd</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">()</span> <span class="o">:</span> <span class="kc">null</span><span class="o">);</span>
+
+		<span class="c1">// 获取自动注入模式</span>
+		<span class="kt">int</span> <span class="n">resolvedAutowireMode</span> <span class="o">=</span> <span class="n">mbd</span><span class="o">.</span><span class="na">getResolvedAutowireMode</span><span class="o">();</span>
+		<span class="c1">// 根据名称 或者 类型 自动注入</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">resolvedAutowireMode</span> <span class="o">==</span> <span class="no">AUTOWIRE_BY_NAME</span> <span class="o">||</span> <span class="n">resolvedAutowireMode</span> <span class="o">==</span> <span class="no">AUTOWIRE_BY_TYPE</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">MutablePropertyValues</span> <span class="n">newPvs</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">MutablePropertyValues</span><span class="o">(</span><span class="n">pvs</span><span class="o">);</span>
+			<span class="c1">// Add property values based on autowire by name if applicable.</span>
+			<span class="c1">// 处理根据名称注入</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">resolvedAutowireMode</span> <span class="o">==</span> <span class="no">AUTOWIRE_BY_NAME</span><span class="o">)</span> <span class="o">{</span>
+				<span class="n">autowireByName</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">bw</span><span class="o">,</span> <span class="n">newPvs</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="c1">// Add property values based on autowire by type if applicable.</span>
+			<span class="c1">// 处理根据类型注入</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">resolvedAutowireMode</span> <span class="o">==</span> <span class="no">AUTOWIRE_BY_TYPE</span><span class="o">)</span> <span class="o">{</span>
+				<span class="n">autowireByType</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">bw</span><span class="o">,</span> <span class="n">newPvs</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="n">pvs</span> <span class="o">=</span> <span class="n">newPvs</span><span class="o">;</span>
+		<span class="o">}</span>
+
+		<span class="kt">boolean</span> <span class="n">hasInstAwareBpps</span> <span class="o">=</span> <span class="n">hasInstantiationAwareBeanPostProcessors</span><span class="o">();</span>
+		<span class="c1">// 是否需要依赖检查</span>
+		<span class="kt">boolean</span> <span class="n">needsDepCheck</span> <span class="o">=</span> <span class="o">(</span><span class="n">mbd</span><span class="o">.</span><span class="na">getDependencyCheck</span><span class="o">()</span> <span class="o">!=</span> <span class="nc">AbstractBeanDefinition</span><span class="o">.</span><span class="na">DEPENDENCY_CHECK_NONE</span><span class="o">);</span>
+
+		<span class="nc">PropertyDescriptor</span><span class="o">[]</span> <span class="n">filteredPds</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+		<span class="c1">// BeanPostProcessor 处理</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">hasInstAwareBpps</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">pvs</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+				<span class="n">pvs</span> <span class="o">=</span> <span class="n">mbd</span><span class="o">.</span><span class="na">getPropertyValues</span><span class="o">();</span>
+			<span class="o">}</span>
+			<span class="c1">// 遍历所有的 BeanPostProcessor</span>
+			<span class="k">for</span> <span class="o">(</span><span class="nc">BeanPostProcessor</span> <span class="n">bp</span> <span class="o">:</span> <span class="n">getBeanPostProcessors</span><span class="o">())</span> <span class="o">{</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">bp</span> <span class="k">instanceof</span> <span class="nc">InstantiationAwareBeanPostProcessor</span><span class="o">)</span> <span class="o">{</span>
+					<span class="nc">InstantiationAwareBeanPostProcessor</span> <span class="n">ibp</span> <span class="o">=</span> <span class="o">(</span><span class="nc">InstantiationAwareBeanPostProcessor</span><span class="o">)</span> <span class="n">bp</span><span class="o">;</span>
+					<span class="nc">PropertyValues</span> <span class="n">pvsToUse</span> <span class="o">=</span> <span class="n">ibp</span><span class="o">.</span><span class="na">postProcessProperties</span><span class="o">(</span><span class="n">pvs</span><span class="o">,</span> <span class="n">bw</span><span class="o">.</span><span class="na">getWrappedInstance</span><span class="o">(),</span> <span class="n">beanName</span><span class="o">);</span>
+					<span class="k">if</span> <span class="o">(</span><span class="n">pvsToUse</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+						<span class="k">if</span> <span class="o">(</span><span class="n">filteredPds</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+							<span class="n">filteredPds</span> <span class="o">=</span> <span class="n">filterPropertyDescriptorsForDependencyCheck</span><span class="o">(</span><span class="n">bw</span><span class="o">,</span> <span class="n">mbd</span><span class="o">.</span><span class="na">allowCaching</span><span class="o">);</span>
+						<span class="o">}</span>
+						<span class="n">pvsToUse</span> <span class="o">=</span> <span class="n">ibp</span><span class="o">.</span><span class="na">postProcessPropertyValues</span><span class="o">(</span><span class="n">pvs</span><span class="o">,</span> <span class="n">filteredPds</span><span class="o">,</span> <span class="n">bw</span><span class="o">.</span><span class="na">getWrappedInstance</span><span class="o">(),</span> <span class="n">beanName</span><span class="o">);</span>
+						<span class="k">if</span> <span class="o">(</span><span class="n">pvsToUse</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+							<span class="k">return</span><span class="o">;</span>
+						<span class="o">}</span>
+					<span class="o">}</span>
+					<span class="n">pvs</span> <span class="o">=</span> <span class="n">pvsToUse</span><span class="o">;</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="c1">// 依赖检查</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">needsDepCheck</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">filteredPds</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+				<span class="n">filteredPds</span> <span class="o">=</span> <span class="n">filterPropertyDescriptorsForDependencyCheck</span><span class="o">(</span><span class="n">bw</span><span class="o">,</span> <span class="n">mbd</span><span class="o">.</span><span class="na">allowCaching</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="n">checkDependencies</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">filteredPds</span><span class="o">,</span> <span class="n">pvs</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="c1">// 将属性应用到 bean 中</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">pvs</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="n">applyPropertyValues</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">mbd</span><span class="o">,</span> <span class="n">bw</span><span class="o">,</span> <span class="n">pvs</span><span class="o">);</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	可以看到<code class="language-plaintext highlighter-rouge">InstantiationAwareBeanPostProcessor</code>对象的调用时机分别是在创建对象后调用了<code class="language-plaintext highlighter-rouge">postProcessAfterInstantiation</code>方法,在注入完了后调用了<code class="language-plaintext highlighter-rouge">postProcessProperties</code>方法,随即填充属性.</p>
+
+<h1 id="三initializebean">三、initializeBean</h1>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">Object</span> <span class="nf">initializeBean</span><span class="o">(</span><span class="kd">final</span> <span class="nc">String</span> <span class="n">beanName</span><span class="o">,</span> <span class="kd">final</span> <span class="nc">Object</span> <span class="n">bean</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">RootBeanDefinition</span> <span class="n">mbd</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">if</span> <span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">getSecurityManager</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">AccessController</span><span class="o">.</span><span class="na">doPrivileged</span><span class="o">((</span><span class="nc">PrivilegedAction</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">&gt;)</span> <span class="o">()</span> <span class="o">-&gt;</span> <span class="o">{</span>
+				<span class="n">invokeAwareMethods</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">bean</span><span class="o">);</span>
+				<span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+			<span class="o">},</span> <span class="n">getAccessControlContext</span><span class="o">());</span>
+		<span class="o">}</span>
+		<span class="k">else</span> <span class="o">{</span>
+			<span class="c1">// 对实现Aware接口的类进行注入例如BeanFactoryAware等接口</span>
+			<span class="n">invokeAwareMethods</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">bean</span><span class="o">);</span>
+		<span class="o">}</span>
+
+		<span class="nc">Object</span> <span class="n">wrappedBean</span> <span class="o">=</span> <span class="n">bean</span><span class="o">;</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">mbd</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="o">!</span><span class="n">mbd</span><span class="o">.</span><span class="na">isSynthetic</span><span class="o">())</span> <span class="o">{</span>
+			<span class="c1">// 前置处理</span>
+			<span class="n">wrappedBean</span> <span class="o">=</span> <span class="n">applyBeanPostProcessorsBeforeInitialization</span><span class="o">(</span><span class="n">wrappedBean</span><span class="o">,</span> <span class="n">beanName</span><span class="o">);</span>
+		<span class="o">}</span>
+
+		<span class="k">try</span> <span class="o">{</span>
+			<span class="c1">// 调用用户的init方法</span>
+			<span class="n">invokeInitMethods</span><span class="o">(</span><span class="n">beanName</span><span class="o">,</span> <span class="n">wrappedBean</span><span class="o">,</span> <span class="n">mbd</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">Throwable</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">BeanCreationException</span><span class="o">(</span>
+					<span class="o">(</span><span class="n">mbd</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">?</span> <span class="n">mbd</span><span class="o">.</span><span class="na">getResourceDescription</span><span class="o">()</span> <span class="o">:</span> <span class="kc">null</span><span class="o">),</span>
+					<span class="n">beanName</span><span class="o">,</span> <span class="s">"Invocation of init method failed"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">mbd</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="o">!</span><span class="n">mbd</span><span class="o">.</span><span class="na">isSynthetic</span><span class="o">())</span> <span class="o">{</span>
+			<span class="c1">// 后置处理</span>
+			<span class="n">wrappedBean</span> <span class="o">=</span> <span class="n">applyBeanPostProcessorsAfterInitialization</span><span class="o">(</span><span class="n">wrappedBean</span><span class="o">,</span> <span class="n">beanName</span><span class="o">);</span>
+		<span class="o">}</span>
+
+		<span class="k">return</span> <span class="n">wrappedBean</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<ol>
+  <li>对实现Aware接口的进行注入</li>
+  <li>调用PostProcessor的前置方法<code class="language-plaintext highlighter-rouge">postProcessBeforeInitialization</code></li>
+  <li>初始化bean 初始化方法</li>
+  <li>初始化完毕后调用PostProcessors的后置方法<code class="language-plaintext highlighter-rouge">postProcessAfterInitialization</code></li>
+</ol>
+
+<p>单利的创建流程记录完毕,其他scope的创建方式都是大同小异,不再重复记录.</p>
+
+<h1 id="四小结">四、小结</h1>
+
+<p>​	创建的过程终于走完了:)</p>

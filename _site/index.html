@@ -5,7 +5,7 @@
 
 <meta name="description" content="java,多线程,jvm,redis,redisdesktopmanager,postgresql
 ">
-<link rel="canonical" href="onewe.github.io/"><link rel="alternate" type="application/rss+xml" title="一水开发笔记" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
+<link rel="canonical" href="https://onew.me/"><link rel="alternate" type="application/rss+xml" title="一水开发笔记" href="/feed.xml"><!-- start favicons snippet, use https://realfavicongenerator.net/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#fc4d50"><link rel="shortcut icon" href="/assets/favicon.ico">
 
 <meta name="msapplication-TileColor" content="#ffc40d"><meta name="msapplication-config" content="/assets/browserconfig.xml">
 
@@ -280,6 +280,30 @@
 
 <!-- end custom main top snippet -->
 <article itemscope itemtype="http://schema.org/WebPage"><header style="display:none;"><h1>主页</h1></header><meta itemprop="headline" content="主页"><meta itemprop="author" content="onew"/><div class="js-article-content"><div class="layout--articles"><div class="article-list items items--divided"><article class="item" itemscope itemtype="http://schema.org/BlogPosting"><div class="item__content">
+          <header><a href="/java/2021/01/19/Weblogic-Metaspace-OOM.html"><h2 itemprop="headline" class="item__header">WebLogic Metaspace OOM 解决案例</h2></a></header>
+          <div class="item__description"><div class="article__content" itemprop="description articleBody">WebLogic Metaspace OOM 解决案例
+
+一、前言
+
+​	估计也只有我这么惨了，都0202年了还在用weblogic这种上古神器。故事要从前段时间说起,至于是多久时间，我也忘记了。
+
+​	某日，线上发布版本,在weblogic控制台更新的时候,直接卡死无响应。一打开日志一瞧，好家伙，OOM了，还是个metaspace的OOM。
+
+​	这玩意儿就有点奇怪了，metaspace按道理是存放的类信息，字面量（Literal）、类静态变量（Class Static）、符号引用（Symbols Reference）等相关信息。类相关信息在metaspace里面又分为2块区域,Klass MetaSpace和NoKlass MetaSpace。这就不细讲了，不然扯不完。
+
+​	也就...</div><p><a href="/java/2021/01/19/Weblogic-Metaspace-OOM.html">阅读更多</a></p></div><div class="article__info clearfix"><ul class="left-col menu"><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=java">java</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=Weblogic">Weblogic</a>
+            </li><li>
+              <a class="button button--secondary button--pill button--sm"
+                href="/archive.html?tag=metaspace+oom">metaspace oom</a>
+            </li></ul><ul class="right-col menu"><li><i class="fas fa-user"></i> <span>onew</span></li><li><i class="far fa-calendar-alt"></i> <span>2021年 01月19日</span>
+            </li></ul></div><meta itemprop="author" content="onew"/><meta itemprop="datePublished" content="2021-01-19T22:01:25+08:00">
+    <meta itemprop="keywords" content="java,Weblogic,metaspace oom"></div>
+      </article><article class="item" itemscope itemtype="http://schema.org/BlogPosting"><div class="item__content">
           <header><a href="/spring/2020/03/14/debug-spring-boot2-jsp.html"><h2 itemprop="headline" class="item__header">spring-boot2 idea jsp 404 问题探究(tomcat启动流程探究)</h2></a></header>
           <div class="item__description"><div class="article__content" itemprop="description articleBody">一、前言
 
@@ -448,31 +472,6 @@ protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate d
                 href="/archive.html?tag=java">java</a>
             </li></ul><ul class="right-col menu"><li><i class="fas fa-user"></i> <span>onew</span></li><li><i class="far fa-calendar-alt"></i> <span>2020年 02月14日</span>
             </li></ul></div><meta itemprop="author" content="onew"/><meta itemprop="datePublished" content="2020-02-14T14:20:25+08:00">
-    <meta itemprop="keywords" content="spring,java"></div>
-      </article><article class="item" itemscope itemtype="http://schema.org/BlogPosting"><div class="item__content">
-          <header><a href="/spring/2020/02/05/debug-spring-3.html"><h2 itemprop="headline" class="item__header">[断点分析之spring-ioc]-xml文件解析(三)</h2></a></header>
-          <div class="item__description"><div class="article__content" itemprop="description articleBody">一、前言
-
-​	前面资源文件加载搞定了,来看看 spring 是如何把 xml 文件变成 bean 的吧.
-
-二、分析
-
-​	还是从4句代码看起.
-
-@Test
-	public void testSpringLoadXml(){
-    // 加载xml
-		BeanFactory factory = new XmlBeanFactory(new ClassPathResource("com/sjr/test/bean/MyTestBean.xml"));
-    // 获取bean
-		final MyTestBean testBean = factory.getBean("myTestBean",MyTestBean.class);
-		final String testStr =...</div><p><a href="/spring/2020/02/05/debug-spring-3.html">阅读更多</a></p></div><div class="article__info clearfix"><ul class="left-col menu"><li>
-              <a class="button button--secondary button--pill button--sm"
-                href="/archive.html?tag=spring">spring</a>
-            </li><li>
-              <a class="button button--secondary button--pill button--sm"
-                href="/archive.html?tag=java">java</a>
-            </li></ul><ul class="right-col menu"><li><i class="fas fa-user"></i> <span>onew</span></li><li><i class="far fa-calendar-alt"></i> <span>2020年 02月05日</span>
-            </li></ul></div><meta itemprop="author" content="onew"/><meta itemprop="datePublished" content="2020-02-05T22:20:25+08:00">
     <meta itemprop="keywords" content="spring,java"></div>
       </article></div>
 </div><div class="layout--home"><div class="pagination"><p>共计 59 篇文章，8 页。</p>

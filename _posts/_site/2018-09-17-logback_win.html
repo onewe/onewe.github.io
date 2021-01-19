@@ -1,0 +1,43 @@
+<h1 id="前言">前言</h1>
+
+<p>近日在windows上开发一款小工具,为了方便排查问题,特地的加入了logback进行记录日志,奈何在cmd中运行的时候中文就乱码了,并且也没有颜色高亮.下文就是我的解决办法.</p>
+
+<h1 id="一中文乱码">一、中文乱码</h1>
+
+<p>面对中文乱码这个问题,首先想到的是改编码集,这里就分为两个端了.可以改cmd的编码集,也可以改java的编码集.一上最方便的是改cmd的编码,只需要在命令执行之前加上一句<code class="language-plaintext highlighter-rouge">chcp 65001</code>就可以了.但是这种方式感觉不太自然,于是就跑去改了logback的编码,logback修改编码也很简单.配置如下:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;appender</span> <span class="na">name=</span><span class="s">"CONSOLE"</span> <span class="na">class=</span><span class="s">"ch.qos.logback.core.ConsoleAppender"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;encoder&gt;</span>
+            <span class="nt">&lt;pattern&gt;</span>${CONSOLE_LOG_PATTERN}<span class="nt">&lt;/pattern&gt;</span>
+            <span class="c">&lt;!--填写GBK即可--&gt;</span>
+            <span class="nt">&lt;charset&gt;</span>GBK<span class="nt">&lt;/charset&gt;</span>
+        <span class="nt">&lt;/encoder&gt;</span>
+    <span class="nt">&lt;/appender&gt;</span>
+</code></pre></div></div>
+
+<h1 id="二无高亮">二、无高亮</h1>
+
+<p>虽然乱码解决了,但看着黑乎乎的窗口还是有点烦呀.google了一下,发现没有颜色的根本原因是cmd不支持ANSI escape code,但mac和linux是天生支持的,所以mac和linux能够正常显示高亮,而win不行.这里有了两个解决办法,第一是,下载一个支持ANSI的终端来替代cmd,但是这种太牵强了;第二种使用logback的官方解决方案即可,配置如下:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;appender</span> <span class="na">name=</span><span class="s">"CONSOLE"</span> <span class="na">class=</span><span class="s">"ch.qos.logback.core.ConsoleAppender"</span><span class="nt">&gt;</span>
+    <span class="c">&lt;!--withJansi 参数改为true--&gt;</span>
+    <span class="nt">&lt;withJansi&gt;</span>true<span class="nt">&lt;/withJansi&gt;</span>
+    <span class="nt">&lt;encoder&gt;</span>
+        <span class="nt">&lt;pattern&gt;</span>${CONSOLE_LOG_PATTERN}<span class="nt">&lt;/pattern&gt;</span>
+        <span class="nt">&lt;charset&gt;</span>GBK<span class="nt">&lt;/charset&gt;</span>
+    <span class="nt">&lt;/encoder&gt;</span>
+<span class="nt">&lt;/appender&gt;</span>
+</code></pre></div></div>
+
+<p>只加这个参数是不行的,还要导入一个jar包pom 如下:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>org.fusesource.jansi<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>jansi<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;version&gt;</span>1.17.1<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</code></pre></div></div>
+
+<h1 id="三总结">三、总结</h1>
+
+<p>内事不决问百度,外事不决问谷歌.</p>

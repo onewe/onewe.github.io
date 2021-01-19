@@ -1,0 +1,82 @@
+<h1 id="hexo与jenkins简单的集成">hexo与jenkins简单的集成</h1>
+<blockquote>
+  <p>由于hexo是静态的内容,导致每次写博客都要把md文件上传到服务器,然后再用hexo命令生成静态文件.这样实在太麻烦了.于是杀鸡焉用牛刀的整上了Jenkins来进行自动部署.O(∩_∩)O哈哈~.</p>
+</blockquote>
+
+<h2 id="安装jenkins">安装Jenkins</h2>
+
+<ul>
+  <li>环境
+    <ul>
+      <li>服务器系统: CentOS7</li>
+      <li>jdk 版本: openJDK 1.8</li>
+    </ul>
+  </li>
+  <li>配置环境(这里主要是安装JDK,如果已经安装请跳过此步骤)
+    <ul>
+      <li>使用命令<code class="language-plaintext highlighter-rouge">yum install java-1.8.0-openjdk* -y</code>安装jdk.</li>
+      <li>验证jdk是否安装成功,使用命令<code class="language-plaintext highlighter-rouge">java 或者 javac</code> ,看是否能否执行该命令</li>
+    </ul>
+  </li>
+  <li>安装jenkins(采用yum的安装方式)
+    <ul>
+      <li>添加jenkins源
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">wget -O /etc/yum.repos.d/jenkins.repo http://jenkins-ci.org/redhat/jenkins.repo</code></li>
+          <li><code class="language-plaintext highlighter-rouge">rpm --import http://pkg.jenkins-ci.org/redhat/jenkins-ci.org.key</code></li>
+        </ul>
+      </li>
+      <li>安装
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">yum install jenkins</code></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>启动jenkins
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">systemctl start jenkins</code></li>
+    </ul>
+  </li>
+  <li>验证是否安装成功
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">systemctl status jenkins</code> <img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_status.png" alt="image" /></li>
+      <li>jenkis默认的端口是8080,请打开浏览器http://服务器ip:8080,验证是否能够访问(如果不能访问,请确认一下防火墙是否是防火墙的问题)</li>
+      <li>第一次访问的时候会要求输入密码,密码会默认生成一个,密码保存在<code class="language-plaintext highlighter-rouge">/var/lib/jenkins/secrets/initialAdminPassword</code>这个文件里面,如果没有请看提示,jenkins会提示密码保存在哪个文件里面.搞定后就出现可以看见jenkins的主页了<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_home.png" alt="image" /></li>
+    </ul>
+  </li>
+  <li>修改登陆密码
+    <ul>
+      <li>点击主页的系统管理<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_home_manager.png" alt="image" /></li>
+      <li>点击管理页面的管理用户<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_manager_user.png" alt="image" /></li>
+      <li>点修齿轮这个按钮<img src="https://gitee.com/oneww/onew_image/raw/master/user_manager_button.png" alt="image" /></li>
+      <li>修改密码<img src="https://gitee.com/oneww/onew_image/raw/master/user_modify.png" alt="image" /></li>
+    </ul>
+  </li>
+  <li>安装git插件
+    <ul>
+      <li>进入插件管理 <img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_install_plugin.png" alt="image" /></li>
+      <li>在插件管理里面的可选插件选项卡中搜索<code class="language-plaintext highlighter-rouge">GIT server Plugin</code> 这个插件,再点击获取.</li>
+    </ul>
+  </li>
+  <li>创建第一个集成任务
+    <ul>
+      <li>进入jenkins主页点击新建任务</li>
+      <li>输入任务名称,即可完成任务的创建<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_add_task.png" alt="image" /></li>
+      <li>配置任务中的源码管理<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_git_conf.png" alt="image" /></li>
+      <li>配置触发器,这里悬着poll SCM的方式,这种方式是周期性的pull源码下来看有没有变化,如果有变化就进行构建.还有很多种触发方式,后面会再写一篇来进行讲解<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_task_trigger_conf.png" alt="image" /></li>
+      <li>配置构建脚本,这里我们选择<code class="language-plaintext highlighter-rouge">Execute shell</code>的方式进行构建,这里的意思是触发器触发后发现git上面的源码有变化就会执行我们的构建脚本,如果git上面没有变化是不会执行构建脚本的.<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_build_conf.png" alt="image" /></li>
+      <li>点击保存,任务就配置好了.可以回到主页看得到我们才创建好的任务.如果要立即执行任务可以点击立即执行的按钮.<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_home_task.png" alt="image" /></li>
+    </ul>
+  </li>
+  <li>查看任务执行日志(如果构建出现问题,可以通过查看日志来排查问题)
+    <ul>
+      <li>点击主页的构建历史按钮<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_task_history.png" alt="image" /></li>
+      <li>点击进去后会看到历史的构建记录,红色的图表是代表构建失败.点击最后面的图标可以查看日志<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_task_output.png" alt="image" /></li>
+      <li>可以通过控制台输出的消息来排查问题所在<img src="https://gitee.com/oneww/onew_image/raw/master/jenkins_task_log.png" alt="image" /></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="总结">总结</h2>
+<p>ok 通过以上的步骤就简单的把hexo和jenkins结合在一起了,写博客也方便了不少.不得不说jenkins是个强大的工具,用来杀鸡也无妨.哈哈哈哈哈.</p>

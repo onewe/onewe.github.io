@@ -1,0 +1,13 @@
+<h1 id="一前言">一、前言</h1>
+
+<p>在弄jenkins 自动集成的时候,部署hexo提示找不到hexo这个命令<code class="language-plaintext highlighter-rouge">hexo: command not found</code>,当时就懵逼了.上服务器看了一下环境变量,貌似是有的.鼓捣了半天想出个比较弱鸡的办法.希望能给广大的网友一点帮助,虽然有点弱鸡.</p>
+
+<h1 id="二解决办法">二、解决办法</h1>
+
+<p>解决办法很简单,把hexo命令链接到/usr/bin目录下面去,如果提示找不到node命令,同样的也可以这样做.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">ln</span> <span class="nt">-s</span> /root/.nvm/versions/node/v10.0.0/bin/hexo /usr/bin/hexo
+<span class="nb">ln</span> <span class="nt">-s</span> /root/.nvm/versions/node/v10.0.0/bin/node /usr/bin/node
+</code></pre></div></div>
+
+<p>ok,虽然鸡肋,但还是把问题解决</p>

@@ -1,0 +1,775 @@
+<h1 id="一前言">一、前言</h1>
+
+<p>​	前面资源文件加载搞定了,来看看 spring 是如何把 xml 文件变成 bean 的吧.</p>
+
+<h1 id="二分析">二、分析</h1>
+
+<p>​	还是从4句代码看起.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Test</span>
+	<span class="kd">public</span> <span class="kt">void</span> <span class="nf">testSpringLoadXml</span><span class="o">(){</span>
+    <span class="c1">// 加载xml</span>
+		<span class="nc">BeanFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">XmlBeanFactory</span><span class="o">(</span><span class="k">new</span> <span class="nc">ClassPathResource</span><span class="o">(</span><span class="s">"com/sjr/test/bean/MyTestBean.xml"</span><span class="o">));</span>
+    <span class="c1">// 获取bean</span>
+		<span class="kd">final</span> <span class="nc">MyTestBean</span> <span class="n">testBean</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">"myTestBean"</span><span class="o">,</span><span class="nc">MyTestBean</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+		<span class="kd">final</span> <span class="nc">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="n">testBean</span><span class="o">.</span><span class="na">getTestStr</span><span class="o">();</span>
+		<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">testStr</span><span class="o">);</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	从解析xml 到 获取bean都是从<code class="language-plaintext highlighter-rouge">XmlBeanFactory</code>中操作的,那么就来看看<code class="language-plaintext highlighter-rouge">XmlBeanFactory</code>里面有啥.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">XmlBeanFactory</span> <span class="kd">extends</span> <span class="nc">DefaultListableBeanFactory</span> <span class="o">{</span>
+
+	<span class="kd">private</span> <span class="kd">final</span> <span class="nc">XmlBeanDefinitionReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">XmlBeanDefinitionReader</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+
+
+	<span class="cm">/**
+	 * 构造函数
+	 */</span>
+	<span class="kd">public</span> <span class="nf">XmlBeanFactory</span><span class="o">(</span><span class="nc">Resource</span> <span class="n">resource</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">BeansException</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">(</span><span class="n">resource</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="cm">/**
+	 * 构造函数
+	 * 指定 父BeanFactory
+	 */</span>
+	<span class="kd">public</span> <span class="nf">XmlBeanFactory</span><span class="o">(</span><span class="nc">Resource</span> <span class="n">resource</span><span class="o">,</span> <span class="nc">BeanFactory</span> <span class="n">parentBeanFactory</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">BeansException</span> <span class="o">{</span>
+		<span class="kd">super</span><span class="o">(</span><span class="n">parentBeanFactory</span><span class="o">);</span>
+    <span class="c1">// 核心代码 A</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">reader</span><span class="o">.</span><span class="na">loadBeanDefinitions</span><span class="o">(</span><span class="n">resource</span><span class="o">);</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	可以看到核心代码在A处,A处用<code class="language-plaintext highlighter-rouge">XmlBeanDefinitionReader</code>进行读取文件,继续跟下去.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="kt">int</span> <span class="nf">loadBeanDefinitions</span><span class="o">(</span><span class="nc">Resource</span> <span class="n">resource</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">BeanDefinitionStoreException</span> <span class="o">{</span>
+		<span class="c1">// 把classPathsResource转换为EncodedResource,默认字符编码为空</span>
+		<span class="k">return</span> <span class="nf">loadBeanDefinitions</span><span class="o">(</span><span class="k">new</span> <span class="nc">EncodedResource</span><span class="o">(</span><span class="n">resource</span><span class="o">));</span>
+	<span class="o">}</span>
+
+	<span class="kd">public</span> <span class="kt">int</span> <span class="nf">loadBeanDefinitions</span><span class="o">(</span><span class="nc">EncodedResource</span> <span class="n">encodedResource</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">BeanDefinitionStoreException</span> <span class="o">{</span>
+		<span class="c1">//加载资源,资源不能为空</span>
+		<span class="nc">Assert</span><span class="o">.</span><span class="na">notNull</span><span class="o">(</span><span class="n">encodedResource</span><span class="o">,</span> <span class="s">"EncodedResource must not be null"</span><span class="o">);</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Loading XML bean definitions from "</span> <span class="o">+</span> <span class="n">encodedResource</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="c1">//判断当前线程是否加载过资源,如果没有则创建一个set来保存encodedResource</span>
+		<span class="nc">Set</span><span class="o">&lt;</span><span class="nc">EncodedResource</span><span class="o">&gt;</span> <span class="n">currentResources</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">resourcesCurrentlyBeingLoaded</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">currentResources</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="n">currentResources</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashSet</span><span class="o">&lt;&gt;(</span><span class="mi">4</span><span class="o">);</span>
+			<span class="k">this</span><span class="o">.</span><span class="na">resourcesCurrentlyBeingLoaded</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">currentResources</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="c1">//判断是否有已近添加过相同的encodedResource</span>
+		<span class="k">if</span> <span class="o">(!</span><span class="n">currentResources</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">encodedResource</span><span class="o">))</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">BeanDefinitionStoreException</span><span class="o">(</span>
+					<span class="s">"Detected cyclic loading of "</span> <span class="o">+</span> <span class="n">encodedResource</span> <span class="o">+</span> <span class="s">" - check your import definitions!"</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">try</span> <span class="o">{</span>
+			<span class="c1">//获取xml文件流</span>
+			<span class="nc">InputStream</span> <span class="n">inputStream</span> <span class="o">=</span> <span class="n">encodedResource</span><span class="o">.</span><span class="na">getResource</span><span class="o">().</span><span class="na">getInputStream</span><span class="o">();</span>
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="nc">InputSource</span> <span class="n">inputSource</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InputSource</span><span class="o">(</span><span class="n">inputStream</span><span class="o">);</span>
+				<span class="c1">//如果编码不为空,则设置文件编码</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">encodedResource</span><span class="o">.</span><span class="na">getEncoding</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+					<span class="n">inputSource</span><span class="o">.</span><span class="na">setEncoding</span><span class="o">(</span><span class="n">encodedResource</span><span class="o">.</span><span class="na">getEncoding</span><span class="o">());</span>
+				<span class="o">}</span>
+				<span class="c1">//加载bean</span>
+        <span class="c1">// B</span>
+				<span class="k">return</span> <span class="nf">doLoadBeanDefinitions</span><span class="o">(</span><span class="n">inputSource</span><span class="o">,</span> <span class="n">encodedResource</span><span class="o">.</span><span class="na">getResource</span><span class="o">());</span>
+			<span class="o">}</span>
+			<span class="k">finally</span> <span class="o">{</span>
+				<span class="n">inputStream</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">BeanDefinitionStoreException</span><span class="o">(</span>
+					<span class="s">"IOException parsing XML document from "</span> <span class="o">+</span> <span class="n">encodedResource</span><span class="o">.</span><span class="na">getResource</span><span class="o">(),</span> <span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">finally</span> <span class="o">{</span>
+			<span class="n">currentResources</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">encodedResource</span><span class="o">);</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">currentResources</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+				<span class="k">this</span><span class="o">.</span><span class="na">resourcesCurrentlyBeingLoaded</span><span class="o">.</span><span class="na">remove</span><span class="o">();</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	以上代码在前面分析加载文件的时候已经看过了,不过这次的重点是在B处,继续跟下去.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">int</span> <span class="nf">doLoadBeanDefinitions</span><span class="o">(</span><span class="nc">InputSource</span> <span class="n">inputSource</span><span class="o">,</span> <span class="nc">Resource</span> <span class="n">resource</span><span class="o">)</span>
+			<span class="kd">throws</span> <span class="nc">BeanDefinitionStoreException</span> <span class="o">{</span>
+
+		<span class="k">try</span> <span class="o">{</span>
+			<span class="c1">// 加载xml</span>
+			<span class="c1">// C</span>
+			<span class="nc">Document</span> <span class="n">doc</span> <span class="o">=</span> <span class="n">doLoadDocument</span><span class="o">(</span><span class="n">inputSource</span><span class="o">,</span> <span class="n">resource</span><span class="o">);</span>
+			<span class="c1">// 注册bean</span>
+			<span class="c1">// D</span>
+			<span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="n">registerBeanDefinitions</span><span class="o">(</span><span class="n">doc</span><span class="o">,</span> <span class="n">resource</span><span class="o">);</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+				<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Loaded "</span> <span class="o">+</span> <span class="n">count</span> <span class="o">+</span> <span class="s">" bean definitions from "</span> <span class="o">+</span> <span class="n">resource</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="k">return</span> <span class="n">count</span><span class="o">;</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">BeanDefinitionStoreException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="n">ex</span><span class="o">;</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">SAXParseException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">XmlBeanDefinitionStoreException</span><span class="o">(</span><span class="n">resource</span><span class="o">.</span><span class="na">getDescription</span><span class="o">(),</span>
+					<span class="s">"Line "</span> <span class="o">+</span> <span class="n">ex</span><span class="o">.</span><span class="na">getLineNumber</span><span class="o">()</span> <span class="o">+</span> <span class="s">" in XML document from "</span> <span class="o">+</span> <span class="n">resource</span> <span class="o">+</span> <span class="s">" is invalid"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">SAXException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">XmlBeanDefinitionStoreException</span><span class="o">(</span><span class="n">resource</span><span class="o">.</span><span class="na">getDescription</span><span class="o">(),</span>
+					<span class="s">"XML document from "</span> <span class="o">+</span> <span class="n">resource</span> <span class="o">+</span> <span class="s">" is invalid"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">ParserConfigurationException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">BeanDefinitionStoreException</span><span class="o">(</span><span class="n">resource</span><span class="o">.</span><span class="na">getDescription</span><span class="o">(),</span>
+					<span class="s">"Parser configuration exception parsing XML from "</span> <span class="o">+</span> <span class="n">resource</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">BeanDefinitionStoreException</span><span class="o">(</span><span class="n">resource</span><span class="o">.</span><span class="na">getDescription</span><span class="o">(),</span>
+					<span class="s">"IOException parsing XML document from "</span> <span class="o">+</span> <span class="n">resource</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="k">catch</span> <span class="o">(</span><span class="nc">Throwable</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">throw</span> <span class="k">new</span> <span class="nf">BeanDefinitionStoreException</span><span class="o">(</span><span class="n">resource</span><span class="o">.</span><span class="na">getDescription</span><span class="o">(),</span>
+					<span class="s">"Unexpected exception parsing XML document from "</span> <span class="o">+</span> <span class="n">resource</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+		<span class="o">}</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	可以看到加载xml的地方是在C处,跟下去看看spring 有没有对加载xml文件做什么特殊处理.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">Document</span> <span class="nf">doLoadDocument</span><span class="o">(</span><span class="nc">InputSource</span> <span class="n">inputSource</span><span class="o">,</span> <span class="nc">Resource</span> <span class="n">resource</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">documentLoader</span><span class="o">.</span><span class="na">loadDocument</span><span class="o">(</span><span class="n">inputSource</span><span class="o">,</span> <span class="n">getEntityResolver</span><span class="o">(),</span> <span class="k">this</span><span class="o">.</span><span class="na">errorHandler</span><span class="o">,</span>
+				<span class="n">getValidationModeForResource</span><span class="o">(</span><span class="n">resource</span><span class="o">),</span> <span class="n">isNamespaceAware</span><span class="o">());</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	<code class="language-plaintext highlighter-rouge">doLoadDocument</code>方法并未对xml进行处理,而是委托<code class="language-plaintext highlighter-rouge">DocumentLoader</code>进行处理,而<code class="language-plaintext highlighter-rouge">DocumentLoader</code>又是个接口,这里使用的是它的默认实现<code class="language-plaintext highlighter-rouge">DefaultDocumentLoader</code>.</p>
+
+<p>​	在<code class="language-plaintext highlighter-rouge">DocumentLoader</code>接口中只有一个方法.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">DocumentLoader</span> <span class="o">{</span>
+
+	<span class="cm">/**
+	 * @param inputSource xml 文件
+	 * @param entityResolver 实体解析对象
+	 * @param errorHandler 错误处理器
+	 * @param validationMode 验证模式
+	 * @param namespaceAware 是否自动感知名称空间
+	 */</span>
+	<span class="nc">Document</span> <span class="nf">loadDocument</span><span class="o">(</span>
+			<span class="nc">InputSource</span> <span class="n">inputSource</span><span class="o">,</span> <span class="nc">EntityResolver</span> <span class="n">entityResolver</span><span class="o">,</span>
+			<span class="nc">ErrorHandler</span> <span class="n">errorHandler</span><span class="o">,</span> <span class="kt">int</span> <span class="n">validationMode</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">namespaceAware</span><span class="o">)</span>
+			<span class="kd">throws</span> <span class="nc">Exception</span><span class="o">;</span>
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	参数说明:</p>
+
+<ul>
+  <li>
+    <p>InputSource</p>
+
+    <p>这个是指xml文件,这个没有什么好说的</p>
+  </li>
+  <li>
+    <p>EntityResolver</p>
+
+    <p>用于加载约束文件,这个约束文件就是xml的dtd和xsd.dtd和xsd是用于校验xml内容</p>
+
+    <p>是否合法.而这个解析器跟前面ResourceLoader一样,最后都是用来查找文件,无论是</p>
+
+    <p>在本地文件系统,还是在远程主机上.</p>
+  </li>
+  <li>
+    <p>ErrorHandler</p>
+
+    <p>用于处理加载xml过程中出现的异常,一般是记录日志</p>
+  </li>
+  <li>
+    <p>validationMode</p>
+
+    <p>用于指定验证模式,验证模式有四种:</p>
+
+    <ol>
+      <li>
+        <p>VALIDATION_NONE</p>
+
+        <p>禁用验证</p>
+      </li>
+      <li>
+        <p>VALIDATION_AUTO</p>
+
+        <p>自动检测验证,默认值</p>
+      </li>
+      <li>
+        <p>VALIDATION_DTD</p>
+
+        <p>采用DTD验证</p>
+      </li>
+      <li>
+        <p>VALIDATION_XSD</p>
+
+        <p>采用XSD验证</p>
+      </li>
+    </ol>
+  </li>
+  <li>
+    <p>namespaceAware</p>
+
+    <p>命名空间支持。如果要提供对 XML 名称空间的支持，则需要值为true</p>
+  </li>
+</ul>
+
+<h2 id="21-entityresolver">2.1 EntityResolver</h2>
+
+<p>​	<code class="language-plaintext highlighter-rouge">EntityResolver</code> 是通过 <code class="language-plaintext highlighter-rouge">getEntityResolver</code>方法获取的,<code class="language-plaintext highlighter-rouge">EntityResolver</code>也是个接口,用于解析dtd,xsd文件.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">EntityResolver</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">abstract</span> <span class="nc">InputSource</span> <span class="nf">resolveEntity</span> <span class="o">(</span><span class="nc">String</span> <span class="n">publicId</span><span class="o">,</span>
+                                               <span class="nc">String</span> <span class="n">systemId</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="nc">SAXException</span><span class="o">,</span> <span class="nc">IOException</span><span class="o">;</span>
+
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	至于这两个参数,是什么意思,可以百度一下.</p>
+
+<h2 id="22-getentityresolver-方法">2.2 getEntityResolver() 方法</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="nc">EntityResolver</span> <span class="nf">getEntityResolver</span><span class="o">()</span> <span class="o">{</span>
+		<span class="c1">// 如果解析器为空</span>
+		<span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">entityResolver</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// Determine default EntityResolver to use.</span>
+			<span class="c1">// 获取资源加载器</span>
+			<span class="nc">ResourceLoader</span> <span class="n">resourceLoader</span> <span class="o">=</span> <span class="n">getResourceLoader</span><span class="o">();</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">resourceLoader</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+				<span class="c1">// 如果资源加载器不为空,则使用资源实体解析器</span>
+				<span class="k">this</span><span class="o">.</span><span class="na">entityResolver</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ResourceEntityResolver</span><span class="o">(</span><span class="n">resourceLoader</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="k">else</span> <span class="o">{</span>
+				<span class="c1">// 如果为空,则委托其他的解析器</span>
+				<span class="c1">// 默认的为 BeansDtdResolver 和 PluggableSchemaResolver</span>
+				<span class="k">this</span><span class="o">.</span><span class="na">entityResolver</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DelegatingEntityResolver</span><span class="o">(</span><span class="n">getBeanClassLoader</span><span class="o">());</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">entityResolver</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<p>​	以上代码通过多次判断,要么返回<code class="language-plaintext highlighter-rouge">ResourceEntityResolver</code>要么返回<code class="language-plaintext highlighter-rouge">DelegatingEntityResolver</code>.这两个解析器是个什么关系?</p>
+
+<p>​	<img src="https://gitee.com/oneww/onew_image/raw/master/ResourceEntityResolver.png" alt="images" /></p>
+
+<p>​	可以看到 <code class="language-plaintext highlighter-rouge">ResourceEntityResolver</code>是继承<code class="language-plaintext highlighter-rouge">DelegatingEntityResolver</code>,而<code class="language-plaintext highlighter-rouge">DelegatingEntityResolver</code>实现了<code class="language-plaintext highlighter-rouge">EntityResolver</code>接口.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ResourceEntityResolver</span> <span class="kd">extends</span> <span class="nc">DelegatingEntityResolver</span> <span class="o">{</span>
+
+	<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Log</span> <span class="n">logger</span> <span class="o">=</span> <span class="nc">LogFactory</span><span class="o">.</span><span class="na">getLog</span><span class="o">(</span><span class="nc">ResourceEntityResolver</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+	<span class="kd">private</span> <span class="kd">final</span> <span class="nc">ResourceLoader</span> <span class="n">resourceLoader</span><span class="o">;</span>
+
+
+	<span class="cm">/**
+	 * Create a ResourceEntityResolver for the specified ResourceLoader
+	 * (usually, an ApplicationContext).
+	 * @param resourceLoader the ResourceLoader (or ApplicationContext)
+	 * to load XML entity includes with
+	 */</span>
+	<span class="kd">public</span> <span class="nf">ResourceEntityResolver</span><span class="o">(</span><span class="nc">ResourceLoader</span> <span class="n">resourceLoader</span><span class="o">)</span> <span class="o">{</span>
+		<span class="kd">super</span><span class="o">(</span><span class="n">resourceLoader</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">());</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">resourceLoader</span> <span class="o">=</span> <span class="n">resourceLoader</span><span class="o">;</span>
+	<span class="o">}</span>
+
+
+	<span class="nd">@Override</span>
+	<span class="nd">@Nullable</span>
+	<span class="kd">public</span> <span class="nc">InputSource</span> <span class="nf">resolveEntity</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">String</span> <span class="n">publicId</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">String</span> <span class="n">systemId</span><span class="o">)</span>
+			<span class="kd">throws</span> <span class="nc">SAXException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+		<span class="c1">// 调用父类 DelegatingEntityResolver::resolveEntity 获取xsd或者dtd,都是从本地的classpath路径下加载文件</span>
+		<span class="nc">InputSource</span> <span class="n">source</span> <span class="o">=</span> <span class="kd">super</span><span class="o">.</span><span class="na">resolveEntity</span><span class="o">(</span><span class="n">publicId</span><span class="o">,</span> <span class="n">systemId</span><span class="o">);</span>
+
+		<span class="c1">//如果 DelegatingEntityResolver::resolveEntity 本地未能加载到xsd或者dtd文件</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">source</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">systemId</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="nc">String</span> <span class="n">resourcePath</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+			<span class="k">try</span> <span class="o">{</span>
+				<span class="c1">// 使用UTF-8 解码</span>
+				<span class="nc">String</span> <span class="n">decodedSystemId</span> <span class="o">=</span> <span class="nc">URLDecoder</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">systemId</span><span class="o">,</span> <span class="s">"UTF-8"</span><span class="o">);</span>
+				<span class="c1">// 转为URL</span>
+				<span class="nc">String</span> <span class="n">givenUrl</span> <span class="o">=</span> <span class="k">new</span> <span class="no">URL</span><span class="o">(</span><span class="n">decodedSystemId</span><span class="o">).</span><span class="na">toString</span><span class="o">();</span>
+				<span class="c1">// 解析文件资源的相对路径（相对于系统根路径）</span>
+				<span class="nc">String</span> <span class="n">systemRootUrl</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">File</span><span class="o">(</span><span class="s">""</span><span class="o">).</span><span class="na">toURI</span><span class="o">().</span><span class="na">toURL</span><span class="o">().</span><span class="na">toString</span><span class="o">();</span>
+				<span class="c1">// Try relative to resource base if currently in system root.</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">givenUrl</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="n">systemRootUrl</span><span class="o">))</span> <span class="o">{</span>
+					<span class="n">resourcePath</span> <span class="o">=</span> <span class="n">givenUrl</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">systemRootUrl</span><span class="o">.</span><span class="na">length</span><span class="o">());</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+			<span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+				<span class="c1">// Typically a MalformedURLException or AccessControlException.</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+					<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Could not resolve XML entity ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"] against system root URL"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="c1">// No URL (or no resolvable URL) -&gt; try relative to resource base.</span>
+				<span class="n">resourcePath</span> <span class="o">=</span> <span class="n">systemId</span><span class="o">;</span>
+			<span class="o">}</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">resourcePath</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+					<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Trying to locate XML entity ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"] as resource ["</span> <span class="o">+</span> <span class="n">resourcePath</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="c1">// 再次尝试从classpath路径下加载文件</span>
+				<span class="nc">Resource</span> <span class="n">resource</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">resourceLoader</span><span class="o">.</span><span class="na">getResource</span><span class="o">(</span><span class="n">resourcePath</span><span class="o">);</span>
+				<span class="n">source</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InputSource</span><span class="o">(</span><span class="n">resource</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">());</span>
+				<span class="n">source</span><span class="o">.</span><span class="na">setPublicId</span><span class="o">(</span><span class="n">publicId</span><span class="o">);</span>
+				<span class="n">source</span><span class="o">.</span><span class="na">setSystemId</span><span class="o">(</span><span class="n">systemId</span><span class="o">);</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+					<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Found XML entity ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"]: "</span> <span class="o">+</span> <span class="n">resource</span><span class="o">);</span>
+				<span class="o">}</span>
+			<span class="o">}</span><span class="c1">//实在没有办法了,从网络上进行加载</span>
+			<span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">systemId</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="no">DTD_SUFFIX</span><span class="o">)</span> <span class="o">||</span> <span class="n">systemId</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="no">XSD_SUFFIX</span><span class="o">))</span> <span class="o">{</span>
+				<span class="c1">// External dtd/xsd lookup via https even for canonical http declaration</span>
+				<span class="nc">String</span> <span class="n">url</span> <span class="o">=</span> <span class="n">systemId</span><span class="o">;</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">url</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"http:"</span><span class="o">))</span> <span class="o">{</span>
+					<span class="n">url</span> <span class="o">=</span> <span class="s">"https:"</span> <span class="o">+</span> <span class="n">url</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">5</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="k">try</span> <span class="o">{</span>
+					<span class="c1">//通过url http加载资源,网络情况不好的情况下很容易挂</span>
+					<span class="n">source</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InputSource</span><span class="o">(</span><span class="k">new</span> <span class="no">URL</span><span class="o">(</span><span class="n">url</span><span class="o">).</span><span class="na">openStream</span><span class="o">());</span>
+					<span class="n">source</span><span class="o">.</span><span class="na">setPublicId</span><span class="o">(</span><span class="n">publicId</span><span class="o">);</span>
+					<span class="n">source</span><span class="o">.</span><span class="na">setSystemId</span><span class="o">(</span><span class="n">systemId</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+					<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+						<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Could not resolve XML entity ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"] through URL ["</span> <span class="o">+</span> <span class="n">url</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+					<span class="o">}</span>
+					<span class="c1">// Fall back to the parser's default behavior.</span>
+					<span class="n">source</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="k">return</span> <span class="n">source</span><span class="o">;</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	大致逻辑如下:</p>
+
+<ol>
+  <li>调用父解析器,进行解析.如果能加载到文件,则返回.</li>
+</ol>
+
+ 	2. 尝试从classpath路径进行加载
+ 	3. 尝试从网络上进行加载
+ 	4. 加载成功 返回 InputSource 对象 否则 返回 NULL
+
+<p>逻辑并不复杂,这里涉及到父解析器<code class="language-plaintext highlighter-rouge">DelegatingEntityResolver</code>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/*
+ * Copyright 2002-2019 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */</span>
+
+<span class="kn">package</span> <span class="nn">org.springframework.beans.factory.xml</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.io.IOException</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.xml.sax.EntityResolver</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.xml.sax.InputSource</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.xml.sax.SAXException</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.springframework.lang.Nullable</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.springframework.util.Assert</span><span class="o">;</span>
+
+<span class="cm">/**
+ * {@link EntityResolver} implementation that delegates to a {@link BeansDtdResolver}
+ * and a {@link PluggableSchemaResolver} for DTDs and XML schemas, respectively.
+ *
+ * @author Rob Harrop
+ * @author Juergen Hoeller
+ * @author Rick Evans
+ * @since 2.0
+ * @see BeansDtdResolver
+ * @see PluggableSchemaResolver
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DelegatingEntityResolver</span> <span class="kd">implements</span> <span class="nc">EntityResolver</span> <span class="o">{</span>
+
+	<span class="cm">/** Suffix for DTD files. */</span>
+  <span class="c1">// 后缀常量</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">DTD_SUFFIX</span> <span class="o">=</span> <span class="s">".dtd"</span><span class="o">;</span>
+
+	<span class="cm">/** Suffix for schema definition files. */</span>
+  <span class="c1">// 后缀常量</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">XSD_SUFFIX</span> <span class="o">=</span> <span class="s">".xsd"</span><span class="o">;</span>
+
+	<span class="c1">// dtd 解析器</span>
+	<span class="kd">private</span> <span class="kd">final</span> <span class="nc">EntityResolver</span> <span class="n">dtdResolver</span><span class="o">;</span>
+	<span class="c1">// xsd 解析器</span>
+	<span class="kd">private</span> <span class="kd">final</span> <span class="nc">EntityResolver</span> <span class="n">schemaResolver</span><span class="o">;</span>
+
+
+	
+	<span class="kd">public</span> <span class="nf">DelegatingEntityResolver</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">ClassLoader</span> <span class="n">classLoader</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">dtdResolver</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BeansDtdResolver</span><span class="o">();</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">schemaResolver</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PluggableSchemaResolver</span><span class="o">(</span><span class="n">classLoader</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	
+	<span class="kd">public</span> <span class="nf">DelegatingEntityResolver</span><span class="o">(</span><span class="nc">EntityResolver</span> <span class="n">dtdResolver</span><span class="o">,</span> <span class="nc">EntityResolver</span> <span class="n">schemaResolver</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">Assert</span><span class="o">.</span><span class="na">notNull</span><span class="o">(</span><span class="n">dtdResolver</span><span class="o">,</span> <span class="s">"'dtdResolver' is required"</span><span class="o">);</span>
+		<span class="nc">Assert</span><span class="o">.</span><span class="na">notNull</span><span class="o">(</span><span class="n">schemaResolver</span><span class="o">,</span> <span class="s">"'schemaResolver' is required"</span><span class="o">);</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">dtdResolver</span> <span class="o">=</span> <span class="n">dtdResolver</span><span class="o">;</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">schemaResolver</span> <span class="o">=</span> <span class="n">schemaResolver</span><span class="o">;</span>
+	<span class="o">}</span>
+
+
+	<span class="nd">@Override</span>
+	<span class="nd">@Nullable</span>
+	<span class="kd">public</span> <span class="nc">InputSource</span> <span class="nf">resolveEntity</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">String</span> <span class="n">publicId</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">String</span> <span class="n">systemId</span><span class="o">)</span>
+			<span class="kd">throws</span> <span class="nc">SAXException</span><span class="o">,</span> <span class="nc">IOException</span> <span class="o">{</span>
+		<span class="c1">//通过后缀去获取资源路径</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">systemId</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// DTD 模式</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">systemId</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="no">DTD_SUFFIX</span><span class="o">))</span> <span class="o">{</span>
+				<span class="c1">// 默认为 BeansDtdResolver</span>
+				<span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">dtdResolver</span><span class="o">.</span><span class="na">resolveEntity</span><span class="o">(</span><span class="n">publicId</span><span class="o">,</span> <span class="n">systemId</span><span class="o">);</span>
+			<span class="o">}</span>
+			<span class="c1">// XSD 模式</span>
+			<span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">systemId</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="no">XSD_SUFFIX</span><span class="o">))</span> <span class="o">{</span>
+				<span class="c1">// 默认为 PluggableSchemaResolver</span>
+				<span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">schemaResolver</span><span class="o">.</span><span class="na">resolveEntity</span><span class="o">(</span><span class="n">publicId</span><span class="o">,</span> <span class="n">systemId</span><span class="o">);</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="c1">// Fall back to the parser's default behavior.</span>
+		<span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+	<span class="o">}</span>
+
+
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nc">String</span> <span class="nf">toString</span><span class="o">()</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="s">"EntityResolver delegating "</span> <span class="o">+</span> <span class="no">XSD_SUFFIX</span> <span class="o">+</span> <span class="s">" to "</span> <span class="o">+</span> <span class="k">this</span><span class="o">.</span><span class="na">schemaResolver</span> <span class="o">+</span>
+				<span class="s">" and "</span> <span class="o">+</span> <span class="no">DTD_SUFFIX</span> <span class="o">+</span> <span class="s">" to "</span> <span class="o">+</span> <span class="k">this</span><span class="o">.</span><span class="na">dtdResolver</span><span class="o">;</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	<code class="language-plaintext highlighter-rouge">DelegatingEntityResolver</code>中的<code class="language-plaintext highlighter-rouge">resolveEntity</code>方法并没有真正的进行逻辑处理,而是委托<code class="language-plaintext highlighter-rouge">dtdResolver</code>和</p>
+
+<p><code class="language-plaintext highlighter-rouge">schemaResolver</code>进行处理,这两个解析器一个负责DTD,另外一个负责XSD.</p>
+
+<p>​	<code class="language-plaintext highlighter-rouge">dtdResolver</code> 默认为:<code class="language-plaintext highlighter-rouge">BeansDtdResolver</code></p>
+
+<p>​	<code class="language-plaintext highlighter-rouge">schemaResolver</code>默认为:<code class="language-plaintext highlighter-rouge">PluggableSchemaResolver</code></p>
+
+<h2 id="23-beansdtdresolver">2.3 BeansDtdResolver</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BeansDtdResolver</span> <span class="kd">implements</span> <span class="nc">EntityResolver</span> <span class="o">{</span>
+	<span class="c1">// DTD 后缀常量</span>
+	<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">DTD_EXTENSION</span> <span class="o">=</span> <span class="s">".dtd"</span><span class="o">;</span>
+	<span class="c1">// DTD 名称</span>
+	<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">DTD_NAME</span> <span class="o">=</span> <span class="s">"spring-beans"</span><span class="o">;</span>
+
+	<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Log</span> <span class="n">logger</span> <span class="o">=</span> <span class="nc">LogFactory</span><span class="o">.</span><span class="na">getLog</span><span class="o">(</span><span class="nc">BeansDtdResolver</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+
+	<span class="nd">@Override</span>
+	<span class="nd">@Nullable</span>
+	<span class="kd">public</span> <span class="nc">InputSource</span> <span class="nf">resolveEntity</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">String</span> <span class="n">publicId</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">String</span> <span class="n">systemId</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Trying to resolve XML entity with public ID ["</span> <span class="o">+</span> <span class="n">publicId</span> <span class="o">+</span>
+					<span class="s">"] and system ID ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="c1">// 判断后缀是否是 DTD,并且systemId 不能为空</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">systemId</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">systemId</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="no">DTD_EXTENSION</span><span class="o">))</span> <span class="o">{</span>
+      <span class="c1">// 分隔符</span>
+			<span class="kt">int</span> <span class="n">lastPathSeparator</span> <span class="o">=</span> <span class="n">systemId</span><span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="sc">'/'</span><span class="o">);</span>
+			<span class="kt">int</span> <span class="n">dtdNameStart</span> <span class="o">=</span> <span class="n">systemId</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="no">DTD_NAME</span><span class="o">,</span> <span class="n">lastPathSeparator</span><span class="o">);</span>
+			<span class="c1">// systemId url 中 必须包含 spring-beans</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">dtdNameStart</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+				<span class="c1">// 并且dtd文件名</span>
+				<span class="nc">String</span> <span class="n">dtdFile</span> <span class="o">=</span> <span class="no">DTD_NAME</span> <span class="o">+</span> <span class="no">DTD_EXTENSION</span><span class="o">;</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+					<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Trying to locate ["</span> <span class="o">+</span> <span class="n">dtdFile</span> <span class="o">+</span> <span class="s">"] in Spring jar on classpath"</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="k">try</span> <span class="o">{</span>
+					<span class="c1">// 加载classpath路径下的spring-beans.dtd文件</span>
+					<span class="nc">Resource</span> <span class="n">resource</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ClassPathResource</span><span class="o">(</span><span class="n">dtdFile</span><span class="o">,</span> <span class="n">getClass</span><span class="o">());</span>
+					<span class="nc">InputSource</span> <span class="n">source</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InputSource</span><span class="o">(</span><span class="n">resource</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">());</span>
+					<span class="c1">// 设置publicId</span>
+					<span class="n">source</span><span class="o">.</span><span class="na">setPublicId</span><span class="o">(</span><span class="n">publicId</span><span class="o">);</span>
+					<span class="c1">// 设置systemId</span>
+					<span class="n">source</span><span class="o">.</span><span class="na">setSystemId</span><span class="o">(</span><span class="n">systemId</span><span class="o">);</span>
+					<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+						<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Found beans DTD ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"] in classpath: "</span> <span class="o">+</span> <span class="n">dtdFile</span><span class="o">);</span>
+					<span class="o">}</span>
+					<span class="k">return</span> <span class="n">source</span><span class="o">;</span>
+				<span class="o">}</span>
+				<span class="k">catch</span> <span class="o">(</span><span class="nc">FileNotFoundException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+					<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+						<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Could not resolve beans DTD ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"]: not found in classpath"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+					<span class="o">}</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="c1">// Fall back to the parser's default behavior.</span>
+		<span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+	<span class="o">}</span>
+
+
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nc">String</span> <span class="nf">toString</span><span class="o">()</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="s">"EntityResolver for spring-beans DTD"</span><span class="o">;</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">BeansDtdResolver</code> 逻辑为,从classpath下加载文件名为<code class="language-plaintext highlighter-rouge">spring-beans.dtd</code>的dtd文件</p>
+
+<h2 id="24-pluggableschemaresolver">2.4 PluggableSchemaResolver</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PluggableSchemaResolver</span> <span class="kd">implements</span> <span class="nc">EntityResolver</span> <span class="o">{</span>
+
+	<span class="cm">/**
+	 * The location of the file that defines schema mappings.
+	 * Can be present in multiple JAR files.
+	 */</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">DEFAULT_SCHEMA_MAPPINGS_LOCATION</span> <span class="o">=</span> <span class="s">"META-INF/spring.schemas"</span><span class="o">;</span>
+
+
+	<span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Log</span> <span class="n">logger</span> <span class="o">=</span> <span class="nc">LogFactory</span><span class="o">.</span><span class="na">getLog</span><span class="o">(</span><span class="nc">PluggableSchemaResolver</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+	<span class="nd">@Nullable</span>
+	<span class="kd">private</span> <span class="kd">final</span> <span class="nc">ClassLoader</span> <span class="n">classLoader</span><span class="o">;</span>
+
+	<span class="kd">private</span> <span class="kd">final</span> <span class="nc">String</span> <span class="n">schemaMappingsLocation</span><span class="o">;</span>
+
+	<span class="cm">/** Stores the mapping of schema URL -&gt; local schema path. */</span>
+	<span class="nd">@Nullable</span>
+	<span class="kd">private</span> <span class="kd">volatile</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">schemaMappings</span><span class="o">;</span>
+
+
+	
+	<span class="kd">public</span> <span class="nf">PluggableSchemaResolver</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">ClassLoader</span> <span class="n">classLoader</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">classLoader</span> <span class="o">=</span> <span class="n">classLoader</span><span class="o">;</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">schemaMappingsLocation</span> <span class="o">=</span> <span class="no">DEFAULT_SCHEMA_MAPPINGS_LOCATION</span><span class="o">;</span>
+	<span class="o">}</span>
+
+	<span class="kd">public</span> <span class="nf">PluggableSchemaResolver</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">ClassLoader</span> <span class="n">classLoader</span><span class="o">,</span> <span class="nc">String</span> <span class="n">schemaMappingsLocation</span><span class="o">)</span> <span class="o">{</span>
+		<span class="nc">Assert</span><span class="o">.</span><span class="na">hasText</span><span class="o">(</span><span class="n">schemaMappingsLocation</span><span class="o">,</span> <span class="s">"'schemaMappingsLocation' must not be empty"</span><span class="o">);</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">classLoader</span> <span class="o">=</span> <span class="n">classLoader</span><span class="o">;</span>
+		<span class="k">this</span><span class="o">.</span><span class="na">schemaMappingsLocation</span> <span class="o">=</span> <span class="n">schemaMappingsLocation</span><span class="o">;</span>
+	<span class="o">}</span>
+
+	<span class="cm">/***
+	 * 先把xsd文件下载到本地,在进行加载
+	 * **/</span>
+	<span class="nd">@Override</span>
+	<span class="nd">@Nullable</span>
+	<span class="kd">public</span> <span class="nc">InputSource</span> <span class="nf">resolveEntity</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">String</span> <span class="n">publicId</span><span class="o">,</span> <span class="nd">@Nullable</span> <span class="nc">String</span> <span class="n">systemId</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Trying to resolve XML entity with public id ["</span> <span class="o">+</span> <span class="n">publicId</span> <span class="o">+</span>
+					<span class="s">"] and system id ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="c1">// systemId url 不能为空</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">systemId</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// 从缓存中加载xsd文件</span>
+			<span class="c1">// 判断缓存中是否有xsd文件</span>
+			<span class="c1">// 缓存中的xsd文件都是从网络中加载</span>
+			<span class="nc">String</span> <span class="n">resourceLocation</span> <span class="o">=</span> <span class="n">getSchemaMappings</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="n">systemId</span><span class="o">);</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">resourceLocation</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">systemId</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"https:"</span><span class="o">))</span> <span class="o">{</span>
+				<span class="c1">// Retrieve canonical http schema mapping even for https declaration</span>
+				<span class="c1">// 如果https 未找到约束文件 则尝试从http 获取缓存</span>
+				<span class="n">resourceLocation</span> <span class="o">=</span> <span class="n">getSchemaMappings</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">"http:"</span> <span class="o">+</span> <span class="n">systemId</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">6</span><span class="o">));</span>
+			<span class="o">}</span>
+			<span class="c1">//如果缓存命中</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">resourceLocation</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+				<span class="c1">//从classpath路径中加载xsd文件</span>
+				<span class="nc">Resource</span> <span class="n">resource</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ClassPathResource</span><span class="o">(</span><span class="n">resourceLocation</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">classLoader</span><span class="o">);</span>
+				<span class="k">try</span> <span class="o">{</span>
+					<span class="nc">InputSource</span> <span class="n">source</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">InputSource</span><span class="o">(</span><span class="n">resource</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">());</span>
+					<span class="c1">// 设置publicId</span>
+					<span class="n">source</span><span class="o">.</span><span class="na">setPublicId</span><span class="o">(</span><span class="n">publicId</span><span class="o">);</span>
+					<span class="c1">// 设置systemId</span>
+					<span class="n">source</span><span class="o">.</span><span class="na">setSystemId</span><span class="o">(</span><span class="n">systemId</span><span class="o">);</span>
+					<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+						<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Found XML schema ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"] in classpath: "</span> <span class="o">+</span> <span class="n">resourceLocation</span><span class="o">);</span>
+					<span class="o">}</span>
+					<span class="k">return</span> <span class="n">source</span><span class="o">;</span>
+				<span class="o">}</span>
+				<span class="k">catch</span> <span class="o">(</span><span class="nc">FileNotFoundException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+					<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isDebugEnabled</span><span class="o">())</span> <span class="o">{</span>
+						<span class="n">logger</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">"Could not find XML schema ["</span> <span class="o">+</span> <span class="n">systemId</span> <span class="o">+</span> <span class="s">"]: "</span> <span class="o">+</span> <span class="n">resource</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+					<span class="o">}</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="c1">// Fall back to the parser's default behavior.</span>
+		<span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+	<span class="o">}</span>
+
+	<span class="cm">/**
+	 * Load the specified schema mappings lazily.
+	 */</span>
+	<span class="kd">private</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="nf">getSchemaMappings</span><span class="o">()</span> <span class="o">{</span>
+		<span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">String</span><span class="o">&gt;</span> <span class="n">schemaMappings</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">schemaMappings</span><span class="o">;</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">schemaMappings</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// 单利模式 同步</span>
+			<span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+				<span class="n">schemaMappings</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">schemaMappings</span><span class="o">;</span>
+				<span class="c1">// 双重检查</span>
+				<span class="k">if</span> <span class="o">(</span><span class="n">schemaMappings</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+					<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+						<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Loading schema mappings from ["</span> <span class="o">+</span> <span class="k">this</span><span class="o">.</span><span class="na">schemaMappingsLocation</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+					<span class="o">}</span>
+					<span class="k">try</span> <span class="o">{</span>
+						<span class="c1">// 加载clsspath路径下的 META-INF/spring.schemas</span>
+						<span class="nc">Properties</span> <span class="n">mappings</span> <span class="o">=</span>
+								<span class="nc">PropertiesLoaderUtils</span><span class="o">.</span><span class="na">loadAllProperties</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">schemaMappingsLocation</span><span class="o">,</span> <span class="k">this</span><span class="o">.</span><span class="na">classLoader</span><span class="o">);</span>
+						<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+							<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Loaded schema mappings: "</span> <span class="o">+</span> <span class="n">mappings</span><span class="o">);</span>
+						<span class="o">}</span>
+						<span class="c1">// 创建线程安全的的hashMap</span>
+						<span class="n">schemaMappings</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ConcurrentHashMap</span><span class="o">&lt;&gt;(</span><span class="n">mappings</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
+						<span class="c1">// properties 转 hashMap</span>
+						<span class="nc">CollectionUtils</span><span class="o">.</span><span class="na">mergePropertiesIntoMap</span><span class="o">(</span><span class="n">mappings</span><span class="o">,</span> <span class="n">schemaMappings</span><span class="o">);</span>
+						<span class="c1">// 赋值</span>
+						<span class="k">this</span><span class="o">.</span><span class="na">schemaMappings</span> <span class="o">=</span> <span class="n">schemaMappings</span><span class="o">;</span>
+					<span class="o">}</span>
+					<span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+						<span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span>
+								<span class="s">"Unable to load schema mappings from location ["</span> <span class="o">+</span> <span class="k">this</span><span class="o">.</span><span class="na">schemaMappingsLocation</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+					<span class="o">}</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+		<span class="k">return</span> <span class="n">schemaMappings</span><span class="o">;</span>
+	<span class="o">}</span>
+
+
+	<span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nc">String</span> <span class="nf">toString</span><span class="o">()</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="s">"EntityResolver using schema mappings "</span> <span class="o">+</span> <span class="n">getSchemaMappings</span><span class="o">();</span>
+	<span class="o">}</span>
+
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<p>​	<code class="language-plaintext highlighter-rouge">PluggableSchemaResolver</code>大体逻辑如下:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. 先根据classpath路径下的` META-INF/spring.schemas`文件创建一个缓存`schemaMappings`
+ 	2. 从`schemaMappings`获取指定`systemId`的xsd文件路径,如果未获取到返回null
+ 	3. 根据xsd路径加载xsd文件返回 `InputSource` 对象
+</code></pre></div></div>
+
+<h2 id="25-getvalidationmodeforresource">2.5 getValidationModeForResource()</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">protected</span> <span class="kt">int</span> <span class="nf">getValidationModeForResource</span><span class="o">(</span><span class="nc">Resource</span> <span class="n">resource</span><span class="o">)</span> <span class="o">{</span>
+		<span class="c1">// 获取验证模式,默认为自动</span>
+		<span class="kt">int</span> <span class="n">validationModeToUse</span> <span class="o">=</span> <span class="n">getValidationMode</span><span class="o">();</span>
+		<span class="c1">// 如果手动指定验证模式则使用指定的验证模式</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">validationModeToUse</span> <span class="o">!=</span> <span class="no">VALIDATION_AUTO</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">return</span> <span class="n">validationModeToUse</span><span class="o">;</span>
+		<span class="o">}</span>
+		<span class="c1">// 非手动指定验证模式,自动检测验证模式</span>
+		<span class="kt">int</span> <span class="n">detectedMode</span> <span class="o">=</span> <span class="n">detectValidationMode</span><span class="o">(</span><span class="n">resource</span><span class="o">);</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">detectedMode</span> <span class="o">!=</span> <span class="no">VALIDATION_AUTO</span><span class="o">)</span> <span class="o">{</span>
+			<span class="k">return</span> <span class="n">detectedMode</span><span class="o">;</span>
+		<span class="o">}</span>
+		<span class="c1">// Hmm, we didn't get a clear indication... Let's assume XSD,</span>
+		<span class="c1">// since apparently no DTD declaration has been found up until</span>
+		<span class="c1">// detection stopped (before finding the document's root tag).</span>
+		<span class="c1">// 以上都未获取验证模式,则使用xsd验证模式</span>
+		<span class="k">return</span> <span class="no">VALIDATION_XSD</span><span class="o">;</span>
+	<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="26-loaddocument">2.6 loadDocument()</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Override</span>
+	<span class="kd">public</span> <span class="nc">Document</span> <span class="nf">loadDocument</span><span class="o">(</span><span class="nc">InputSource</span> <span class="n">inputSource</span><span class="o">,</span> <span class="nc">EntityResolver</span> <span class="n">entityResolver</span><span class="o">,</span>
+			<span class="nc">ErrorHandler</span> <span class="n">errorHandler</span><span class="o">,</span> <span class="kt">int</span> <span class="n">validationMode</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">namespaceAware</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+		<span class="c1">// 解析xml常用套路</span>
+		<span class="nc">DocumentBuilderFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="n">createDocumentBuilderFactory</span><span class="o">(</span><span class="n">validationMode</span><span class="o">,</span> <span class="n">namespaceAware</span><span class="o">);</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">logger</span><span class="o">.</span><span class="na">isTraceEnabled</span><span class="o">())</span> <span class="o">{</span>
+			<span class="n">logger</span><span class="o">.</span><span class="na">trace</span><span class="o">(</span><span class="s">"Using JAXP provider ["</span> <span class="o">+</span> <span class="n">factory</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="c1">// 解析xml常用套路</span>
+		<span class="nc">DocumentBuilder</span> <span class="n">builder</span> <span class="o">=</span> <span class="n">createDocumentBuilder</span><span class="o">(</span><span class="n">factory</span><span class="o">,</span> <span class="n">entityResolver</span><span class="o">,</span> <span class="n">errorHandler</span><span class="o">);</span>
+		<span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="n">inputSource</span><span class="o">);</span>
+	<span class="o">}</span>
+
+	<span class="cm">/**
+	 * Create the {@link DocumentBuilderFactory} instance.
+	 * @param validationMode the type of validation: {@link XmlValidationModeDetector#VALIDATION_DTD DTD}
+	 * or {@link XmlValidationModeDetector#VALIDATION_XSD XSD})
+	 * @param namespaceAware whether the returned factory is to provide support for XML namespaces
+	 * @return the JAXP DocumentBuilderFactory
+	 * @throws ParserConfigurationException if we failed to build a proper DocumentBuilderFactory
+	 */</span>
+	<span class="kd">protected</span> <span class="nc">DocumentBuilderFactory</span> <span class="nf">createDocumentBuilderFactory</span><span class="o">(</span><span class="kt">int</span> <span class="n">validationMode</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">namespaceAware</span><span class="o">)</span>
+			<span class="kd">throws</span> <span class="nc">ParserConfigurationException</span> <span class="o">{</span>
+
+		<span class="nc">DocumentBuilderFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="nc">DocumentBuilderFactory</span><span class="o">.</span><span class="na">newInstance</span><span class="o">();</span>
+		<span class="c1">// 设置命名空间支持</span>
+		<span class="n">factory</span><span class="o">.</span><span class="na">setNamespaceAware</span><span class="o">(</span><span class="n">namespaceAware</span><span class="o">);</span>
+		<span class="c1">// 非禁用验证模式</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">validationMode</span> <span class="o">!=</span> <span class="nc">XmlValidationModeDetector</span><span class="o">.</span><span class="na">VALIDATION_NONE</span><span class="o">)</span> <span class="o">{</span>
+			<span class="c1">// 开启校验</span>
+			<span class="n">factory</span><span class="o">.</span><span class="na">setValidating</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+			<span class="c1">// 如果为XSD</span>
+			<span class="k">if</span> <span class="o">(</span><span class="n">validationMode</span> <span class="o">==</span> <span class="nc">XmlValidationModeDetector</span><span class="o">.</span><span class="na">VALIDATION_XSD</span><span class="o">)</span> <span class="o">{</span>
+				<span class="c1">// Enforce namespace aware for XSD...</span>
+				<span class="c1">// XSD 模式下，强制设置命名空间支持</span>
+				<span class="n">factory</span><span class="o">.</span><span class="na">setNamespaceAware</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+				<span class="k">try</span> <span class="o">{</span>
+					<span class="c1">// 设置 SCHEMA_LANGUAGE_ATTRIBUTE</span>
+					<span class="n">factory</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="no">SCHEMA_LANGUAGE_ATTRIBUTE</span><span class="o">,</span> <span class="no">XSD_SCHEMA_LANGUAGE</span><span class="o">);</span>
+				<span class="o">}</span>
+				<span class="k">catch</span> <span class="o">(</span><span class="nc">IllegalArgumentException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+					<span class="nc">ParserConfigurationException</span> <span class="n">pcex</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ParserConfigurationException</span><span class="o">(</span>
+							<span class="s">"Unable to validate using XSD: Your JAXP provider ["</span> <span class="o">+</span> <span class="n">factory</span> <span class="o">+</span>
+							<span class="s">"] does not support XML Schema. Are you running on Java 1.4 with Apache Crimson? "</span> <span class="o">+</span>
+							<span class="s">"Upgrade to Apache Xerces (or Java 1.5) for full XSD support."</span><span class="o">);</span>
+					<span class="n">pcex</span><span class="o">.</span><span class="na">initCause</span><span class="o">(</span><span class="n">ex</span><span class="o">);</span>
+					<span class="k">throw</span> <span class="n">pcex</span><span class="o">;</span>
+				<span class="o">}</span>
+			<span class="o">}</span>
+		<span class="o">}</span>
+
+		<span class="k">return</span> <span class="n">factory</span><span class="o">;</span>
+	<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h1 id="三小结">三、小结</h1>
+
+<p>​	xml 加载并创建为 <code class="language-plaintext highlighter-rouge">Document</code> 对象,接下来就是 解析并创建为bean.</p>

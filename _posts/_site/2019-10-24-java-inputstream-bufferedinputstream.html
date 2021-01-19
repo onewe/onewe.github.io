@@ -1,0 +1,358 @@
+<h1 id="一前言">一、前言</h1>
+
+<p>最近在项目遇到一个BufferedInputStream和InputStream混用的问题,导致InputStream阻塞线程,于是为了解决问题,打算剥开BufferedInputStream的buffer观察内在的本质,凭啥都说BufferedInputStream比InputStream快?</p>
+
+<h1 id="二事故线程">二、事故线程</h1>
+
+<p>事故是发生在,抄袭的jsch下载文件的demo里,为了偷懒开发人员直接把demo里面的代码扒了下了,不过好在一点是开发人员觉得InputStream比较慢,换成了BufferedInputStream.这点还是比较好的,至少有点点常识.以下为部分代码.</p>
+
+<ul>
+  <li>读取文件代码</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   			<span class="nc">ChannelExec</span> <span class="n">channel</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="nc">OutputStream</span> <span class="n">outputStream</span><span class="o">;</span>
+        <span class="nc">InputStream</span> <span class="n">inputStream</span><span class="o">;</span>
+        <span class="nc">BufferedOutputStream</span> <span class="n">bufferedOutputStream</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="nc">BufferedInputStream</span> <span class="n">bufferedInputStream</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="nc">BufferedOutputStream</span> <span class="n">bufferedFileOutputStream</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">channel</span> <span class="o">=</span> <span class="o">(</span><span class="nc">ChannelExec</span><span class="o">)</span> <span class="n">session</span><span class="o">.</span><span class="na">openChannel</span><span class="o">(</span><span class="s">"exec"</span><span class="o">);</span>
+            <span class="n">channel</span><span class="o">.</span><span class="na">setCommand</span><span class="o">(</span><span class="n">command</span><span class="o">);</span>
+            <span class="n">outputStream</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">();</span>
+            <span class="n">inputStream</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">();</span>
+            <span class="n">channel</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="mi">4000</span><span class="o">);</span>
+          	<span class="c1">//buffer 数组</span>
+            <span class="kt">byte</span><span class="o">[]</span> <span class="n">buf</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1000</span><span class="o">];</span>
+            <span class="n">bufferedOutputStream</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BufferedOutputStream</span><span class="o">(</span><span class="n">outputStream</span><span class="o">);</span>
+            <span class="n">buf</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+            <span class="n">bufferedOutputStream</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span><span class="mi">0</span><span class="o">,</span><span class="mi">1</span><span class="o">);</span>
+            <span class="n">bufferedOutputStream</span><span class="o">.</span><span class="na">flush</span><span class="o">();</span>
+            <span class="n">bufferedInputStream</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BufferedInputStream</span><span class="o">(</span><span class="n">inputStream</span><span class="o">);</span>
+            <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">){</span>
+              	<span class="c1">//检查数据流</span>
+                <span class="nc">CommandStatus</span> <span class="n">commandStatus</span> <span class="o">=</span> <span class="n">checkAck</span><span class="o">(</span><span class="n">inputStream</span><span class="o">);</span>
+                <span class="k">if</span><span class="o">(</span><span class="n">commandStatus</span><span class="o">.</span><span class="na">code</span> <span class="o">!=</span> <span class="sc">'C'</span><span class="o">){</span>
+                    <span class="k">break</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="n">bufferedInputStream</span><span class="o">.</span><span class="na">read</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span><span class="mi">0</span><span class="o">,</span><span class="mi">5</span><span class="o">);</span>
+
+                <span class="kt">long</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+                <span class="kt">int</span> <span class="n">foo</span><span class="o">;</span>
+                <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">){</span>
+                    <span class="k">if</span><span class="o">(</span><span class="n">buf</span><span class="o">.</span><span class="na">length</span> <span class="o">&lt;</span> <span class="n">fileSize</span><span class="o">){</span>
+                        <span class="n">foo</span> <span class="o">=</span> <span class="n">buf</span><span class="o">.</span><span class="na">length</span><span class="o">;</span>
+                    <span class="o">}</span><span class="k">else</span><span class="o">{</span>
+                        <span class="n">foo</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">fileSize</span><span class="o">;</span>
+                    <span class="o">}</span>
+
+                    <span class="n">foo</span> <span class="o">=</span> <span class="n">bufferedInputStream</span><span class="o">.</span><span class="na">read</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span><span class="mi">0</span><span class="o">,</span><span class="n">foo</span><span class="o">);</span>
+                    <span class="n">count</span> <span class="o">+=</span> <span class="n">foo</span><span class="o">;</span>
+                    <span class="n">message</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="n">messageStrFormat</span><span class="o">,</span> <span class="o">(</span><span class="n">count</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">finalFileSzie</span><span class="o">)</span> <span class="o">*</span> <span class="mi">100</span><span class="o">,</span><span class="n">count</span><span class="o">,</span><span class="n">finalFileSzie</span><span class="o">));</span>
+                    <span class="k">if</span><span class="o">(</span><span class="n">foo</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">){</span>
+                        <span class="k">break</span><span class="o">;</span>
+                    <span class="o">}</span>
+                    <span class="n">bufferedFileOutputStream</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span><span class="mi">0</span><span class="o">,</span><span class="n">foo</span><span class="o">);</span>
+                    <span class="n">bufferedFileOutputStream</span><span class="o">.</span><span class="na">flush</span><span class="o">();</span>
+                    <span class="n">fileSize</span> <span class="o">-=</span><span class="n">foo</span><span class="o">;</span>
+                    <span class="k">if</span><span class="o">(</span><span class="n">fileSize</span> <span class="o">==</span> <span class="mi">0L</span><span class="o">){</span>
+                        <span class="k">break</span><span class="o">;</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+              <span class="c1">//检查数据流</span>
+                <span class="n">commandStatus</span> <span class="o">=</span> <span class="n">checkAck</span><span class="o">(</span><span class="n">inputStream</span><span class="o">);</span>
+                <span class="k">if</span><span class="o">(!</span><span class="n">commandStatus</span><span class="o">.</span><span class="na">isOk</span><span class="o">){</span>
+                    <span class="n">message</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="n">commandStatus</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+                    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="n">buf</span><span class="o">[</span><span class="mi">0</span><span class="o">]=</span><span class="mi">0</span><span class="o">;</span>
+                <span class="n">bufferedOutputStream</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span><span class="mi">0</span><span class="o">,</span><span class="mi">1</span><span class="o">);</span>
+                <span class="n">bufferedOutputStream</span><span class="o">.</span><span class="na">flush</span><span class="o">();</span>
+            <span class="o">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>检查流代码</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="kd">private</span> <span class="kd">static</span> <span class="nc">CommandStatus</span> <span class="nf">checkAck</span><span class="o">(</span><span class="nc">InputStream</span> <span class="n">input</span><span class="o">){</span>
+        <span class="nc">CommandStatus</span> <span class="n">commandStatus</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CommandStatus</span><span class="o">();</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="n">input</span><span class="o">.</span><span class="na">read</span><span class="o">();</span>
+            <span class="n">commandStatus</span><span class="o">.</span><span class="na">setCode</span><span class="o">(</span><span class="n">b</span><span class="o">);</span>
+            <span class="k">if</span><span class="o">(</span><span class="n">b</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">b</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="o">){</span>
+                <span class="n">commandStatus</span><span class="o">.</span><span class="na">setOk</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+                <span class="k">return</span> <span class="n">commandStatus</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="k">if</span><span class="o">(</span><span class="n">b</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">||</span> <span class="n">b</span> <span class="o">==</span> <span class="mi">2</span><span class="o">){</span>
+                <span class="n">commandStatus</span><span class="o">.</span><span class="na">setOk</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+                <span class="nc">StringBuilder</span> <span class="n">sb</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">StringBuilder</span><span class="o">();</span>
+                <span class="nc">BufferedReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">BufferedReader</span><span class="o">(</span><span class="k">new</span> <span class="nc">InputStreamReader</span><span class="o">(</span><span class="k">new</span> <span class="nc">BufferedInputStream</span><span class="o">(</span><span class="n">input</span><span class="o">)));</span>
+                <span class="n">reader</span><span class="o">.</span><span class="na">lines</span><span class="o">().</span><span class="na">forEach</span><span class="o">(</span><span class="n">s</span> <span class="o">-&gt;</span> <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">s</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">"\n"</span><span class="o">));</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+                <span class="n">commandStatus</span><span class="o">.</span><span class="na">setMessage</span><span class="o">(</span><span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="n">commandStatus</span><span class="o">.</span><span class="na">setMessage</span><span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+            <span class="n">commandStatus</span><span class="o">.</span><span class="na">setOk</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="k">return</span> <span class="n">commandStatus</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>事故发生在读取文件代码中的,第二次检查流的时候出现了线程阻塞.</p>
+
+<ol>
+  <li>
+    <p>为什么会发生阻塞?</p>
+
+    <p>一般来说发生阻塞会有两种情况:</p>
+
+    <p>1: 底层buffer未被填满</p>
+
+    <p>2: 没有任何可以读取的数据,等待发送数据</p>
+
+    <p>后面开发人员发现了这个阻塞的bug,经过抢救把原先使用inputStream 来检测流的代码换成了BufferedInputStream,神奇的是,问题就被解决了.但却不知道为啥被解决了,就是这么莫名其妙.</p>
+  </li>
+</ol>
+
+<p>​	要想分析出原因,那么就要扒开buffer的外衣,观察本质.</p>
+
+<h1 id="三代码分析">三、代码分析</h1>
+
+<ol>
+  <li>
+    <p>BufferedInputStream,以下为省略部分代码</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span>
+<span class="kd">class</span> <span class="nc">BufferedInputStream</span> <span class="kd">extends</span> <span class="nc">FilterInputStream</span> <span class="o">{</span>
+   
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="no">DEFAULT_BUFFER_SIZE</span> <span class="o">=</span> <span class="mi">8192</span><span class="o">;</span>
+   
+    <span class="cm">/**
+     * The maximum size of array to allocate.
+     * Some VMs reserve some header words in an array.
+     * Attempts to allocate larger arrays may result in
+     * OutOfMemoryError: Requested array size exceeds VM limit
+     */</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="no">MAX_BUFFER_SIZE</span> <span class="o">=</span> <span class="nc">Integer</span><span class="o">.</span><span class="na">MAX_VALUE</span> <span class="o">-</span> <span class="mi">8</span><span class="o">;</span>
+   
+    <span class="cm">/**
+     * The internal buffer array where the data is stored. When necessary,
+     * it may be replaced by another array of
+     * a different size.
+     */</span>
+    <span class="kd">protected</span> <span class="kd">volatile</span> <span class="kt">byte</span> <span class="n">buf</span><span class="o">[];</span>
+     
+    <span class="cm">/**
+     * Check to make sure that underlying input stream has not been
+     * nulled out due to close; if not return it;
+     */</span>
+    <span class="kd">private</span> <span class="nc">InputStream</span> <span class="nf">getInIfOpen</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="nc">InputStream</span> <span class="n">input</span> <span class="o">=</span> <span class="n">in</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">input</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"Stream closed"</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">input</span><span class="o">;</span>
+    <span class="o">}</span>
+   
+    <span class="cm">/**
+     * Check to make sure that buffer has not been nulled out due to
+     * close; if not return it;
+     */</span>
+    <span class="kd">private</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">getBufIfOpen</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">buffer</span> <span class="o">=</span> <span class="n">buf</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">buffer</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"Stream closed"</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">buffer</span><span class="o">;</span>
+    <span class="o">}</span>
+     
+   <span class="kd">private</span> <span class="kt">void</span> <span class="nf">fill</span><span class="o">()</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="kt">byte</span><span class="o">[]</span> <span class="n">buffer</span> <span class="o">=</span> <span class="n">getBufIfOpen</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">markpos</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>            <span class="cm">/* no mark: throw away the buffer */</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">pos</span> <span class="o">&gt;=</span> <span class="n">buffer</span><span class="o">.</span><span class="na">length</span><span class="o">)</span>  <span class="cm">/* no room left in buffer */</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">markpos</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>  <span class="cm">/* can throw away early part of the buffer */</span>
+                <span class="kt">int</span> <span class="n">sz</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">-</span> <span class="n">markpos</span><span class="o">;</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">arraycopy</span><span class="o">(</span><span class="n">buffer</span><span class="o">,</span> <span class="n">markpos</span><span class="o">,</span> <span class="n">buffer</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">sz</span><span class="o">);</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">sz</span><span class="o">;</span>
+                <span class="n">markpos</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">buffer</span><span class="o">.</span><span class="na">length</span> <span class="o">&gt;=</span> <span class="n">marklimit</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">markpos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>   <span class="cm">/* buffer got too big, invalidate mark */</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>        <span class="cm">/* drop buffer contents */</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">buffer</span><span class="o">.</span><span class="na">length</span> <span class="o">&gt;=</span> <span class="no">MAX_BUFFER_SIZE</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">OutOfMemoryError</span><span class="o">(</span><span class="s">"Required array size too large"</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>            <span class="cm">/* grow buffer */</span>
+                <span class="kt">int</span> <span class="n">nsz</span> <span class="o">=</span> <span class="o">(</span><span class="n">pos</span> <span class="o">&lt;=</span> <span class="no">MAX_BUFFER_SIZE</span> <span class="o">-</span> <span class="n">pos</span><span class="o">)</span> <span class="o">?</span>
+                        <span class="n">pos</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">:</span> <span class="no">MAX_BUFFER_SIZE</span><span class="o">;</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">nsz</span> <span class="o">&gt;</span> <span class="n">marklimit</span><span class="o">)</span>
+                    <span class="n">nsz</span> <span class="o">=</span> <span class="n">marklimit</span><span class="o">;</span>
+                <span class="kt">byte</span> <span class="n">nbuf</span><span class="o">[]</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[</span><span class="n">nsz</span><span class="o">];</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">arraycopy</span><span class="o">(</span><span class="n">buffer</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">nbuf</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">pos</span><span class="o">);</span>
+                <span class="k">if</span> <span class="o">(!</span><span class="n">bufUpdater</span><span class="o">.</span><span class="na">compareAndSet</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">buffer</span><span class="o">,</span> <span class="n">nbuf</span><span class="o">))</span> <span class="o">{</span>
+                    <span class="c1">// Can't replace buf if there was an async close.</span>
+                    <span class="c1">// Note: This would need to be changed if fill()</span>
+                    <span class="c1">// is ever made accessible to multiple threads.</span>
+                    <span class="c1">// But for now, the only way CAS can fail is via close.</span>
+                    <span class="c1">// assert buf == null;</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"Stream closed"</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="n">buffer</span> <span class="o">=</span> <span class="n">nbuf</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="n">pos</span><span class="o">;</span>
+        <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="n">getInIfOpen</span><span class="o">().</span><span class="na">read</span><span class="o">(</span><span class="n">buffer</span><span class="o">,</span> <span class="n">pos</span><span class="o">,</span> <span class="n">buffer</span><span class="o">.</span><span class="na">length</span> <span class="o">-</span> <span class="n">pos</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="n">n</span> <span class="o">+</span> <span class="n">pos</span><span class="o">;</span>
+    <span class="o">}</span>
+     
+   <span class="cm">/**
+     * Read characters into a portion of an array, reading from the underlying
+     * stream at most once if necessary.
+     */</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="nf">read1</span><span class="o">(</span><span class="kt">byte</span><span class="o">[]</span> <span class="n">b</span><span class="o">,</span> <span class="kt">int</span> <span class="n">off</span><span class="o">,</span> <span class="kt">int</span> <span class="n">len</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">avail</span> <span class="o">=</span> <span class="n">count</span> <span class="o">-</span> <span class="n">pos</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">avail</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="cm">/* If the requested length is at least as large as the buffer, and
+               if there is no mark/reset activity, do not bother to copy the
+               bytes into the local buffer.  In this way buffered streams will
+               cascade harmlessly. */</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">len</span> <span class="o">&gt;=</span> <span class="n">getBufIfOpen</span><span class="o">().</span><span class="na">length</span> <span class="o">&amp;&amp;</span> <span class="n">markpos</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="nf">getInIfOpen</span><span class="o">().</span><span class="na">read</span><span class="o">(</span><span class="n">b</span><span class="o">,</span> <span class="n">off</span><span class="o">,</span> <span class="n">len</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="n">fill</span><span class="o">();</span>
+            <span class="n">avail</span> <span class="o">=</span> <span class="n">count</span> <span class="o">-</span> <span class="n">pos</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">avail</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="kt">int</span> <span class="n">cnt</span> <span class="o">=</span> <span class="o">(</span><span class="n">avail</span> <span class="o">&lt;</span> <span class="n">len</span><span class="o">)</span> <span class="o">?</span> <span class="n">avail</span> <span class="o">:</span> <span class="n">len</span><span class="o">;</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">arraycopy</span><span class="o">(</span><span class="n">getBufIfOpen</span><span class="o">(),</span> <span class="n">pos</span><span class="o">,</span> <span class="n">b</span><span class="o">,</span> <span class="n">off</span><span class="o">,</span> <span class="n">cnt</span><span class="o">);</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="n">cnt</span><span class="o">;</span>
+        <span class="k">return</span> <span class="n">cnt</span><span class="o">;</span>
+    <span class="o">}</span>
+     
+     
+   <span class="kd">public</span> <span class="kd">synchronized</span> <span class="kt">int</span> <span class="nf">read</span><span class="o">(</span><span class="kt">byte</span> <span class="n">b</span><span class="o">[],</span> <span class="kt">int</span> <span class="n">off</span><span class="o">,</span> <span class="kt">int</span> <span class="n">len</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="nc">IOException</span>
+    <span class="o">{</span>
+        <span class="n">getBufIfOpen</span><span class="o">();</span> <span class="c1">// Check for closed stream</span>
+        <span class="k">if</span> <span class="o">((</span><span class="n">off</span> <span class="o">|</span> <span class="n">len</span> <span class="o">|</span> <span class="o">(</span><span class="n">off</span> <span class="o">+</span> <span class="n">len</span><span class="o">)</span> <span class="o">|</span> <span class="o">(</span><span class="n">b</span><span class="o">.</span><span class="na">length</span> <span class="o">-</span> <span class="o">(</span><span class="n">off</span> <span class="o">+</span> <span class="n">len</span><span class="o">)))</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IndexOutOfBoundsException</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">len</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="o">}</span>
+   
+        <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">for</span> <span class="o">(;;)</span> <span class="o">{</span>
+            <span class="kt">int</span> <span class="n">nread</span> <span class="o">=</span> <span class="n">read1</span><span class="o">(</span><span class="n">b</span><span class="o">,</span> <span class="n">off</span> <span class="o">+</span> <span class="n">n</span><span class="o">,</span> <span class="n">len</span> <span class="o">-</span> <span class="n">n</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">nread</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span>
+                <span class="k">return</span> <span class="o">(</span><span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">?</span> <span class="n">nread</span> <span class="o">:</span> <span class="n">n</span><span class="o">;</span>
+            <span class="n">n</span> <span class="o">+=</span> <span class="n">nread</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="n">len</span><span class="o">)</span>
+                <span class="k">return</span> <span class="n">n</span><span class="o">;</span>
+            <span class="c1">// if not closed but no bytes available, return</span>
+            <span class="nc">InputStream</span> <span class="n">input</span> <span class="o">=</span> <span class="n">in</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">input</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">input</span><span class="o">.</span><span class="na">available</span><span class="o">()</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span>
+                <span class="k">return</span> <span class="n">n</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>一般情况下都会使用<code class="language-plaintext highlighter-rouge"> public synchronized int read(byte b[], int off, int len)</code>这个方法去读取数据,<code class="language-plaintext highlighter-rouge">read</code>方法本质上是使用了<code class="language-plaintext highlighter-rouge">private int read1(byte[] b, int off, int len) throws IOException </code></p>
+
+    <p>读取数据.那么核心逻辑就在<code class="language-plaintext highlighter-rouge">read1</code>方法中.</p>
+
+    <p>聚焦一下<code class="language-plaintext highlighter-rouge">read1</code>方法:</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="kd">private</span> <span class="kt">int</span> <span class="nf">read1</span><span class="o">(</span><span class="kt">byte</span><span class="o">[]</span> <span class="n">b</span><span class="o">,</span> <span class="kt">int</span> <span class="n">off</span><span class="o">,</span> <span class="kt">int</span> <span class="n">len</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">avail</span> <span class="o">=</span> <span class="n">count</span> <span class="o">-</span> <span class="n">pos</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">avail</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="cm">/* If the requested length is at least as large as the buffer, and
+               if there is no mark/reset activity, do not bother to copy the
+               bytes into the local buffer.  In this way buffered streams will
+               cascade harmlessly. */</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">len</span> <span class="o">&gt;=</span> <span class="n">getBufIfOpen</span><span class="o">().</span><span class="na">length</span> <span class="o">&amp;&amp;</span> <span class="n">markpos</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="nf">getInIfOpen</span><span class="o">().</span><span class="na">read</span><span class="o">(</span><span class="n">b</span><span class="o">,</span> <span class="n">off</span><span class="o">,</span> <span class="n">len</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="n">fill</span><span class="o">();</span>
+            <span class="n">avail</span> <span class="o">=</span> <span class="n">count</span> <span class="o">-</span> <span class="n">pos</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">avail</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="o">)</span> <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="kt">int</span> <span class="n">cnt</span> <span class="o">=</span> <span class="o">(</span><span class="n">avail</span> <span class="o">&lt;</span> <span class="n">len</span><span class="o">)</span> <span class="o">?</span> <span class="n">avail</span> <span class="o">:</span> <span class="n">len</span><span class="o">;</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">arraycopy</span><span class="o">(</span><span class="n">getBufIfOpen</span><span class="o">(),</span> <span class="n">pos</span><span class="o">,</span> <span class="n">b</span><span class="o">,</span> <span class="n">off</span><span class="o">,</span> <span class="n">cnt</span><span class="o">);</span>
+        <span class="n">pos</span> <span class="o">+=</span> <span class="n">cnt</span><span class="o">;</span>
+        <span class="k">return</span> <span class="n">cnt</span><span class="o">;</span>
+    <span class="o">}</span>
+     
+</code></pre></div>    </div>
+
+    <ol>
+      <li>检测是否具有可用的数据可供读取</li>
+      <li>如果没有则判断读取的长度是否大于<code class="language-plaintext highlighter-rouge">BufferedInputStream</code>内置的buffer的长度,并且设置标记.</li>
+      <li>如果大于则调用<code class="language-plaintext highlighter-rouge">InputStream</code>的<code class="language-plaintext highlighter-rouge">read</code>方法读取,并返回整个数组</li>
+      <li>如果小于,则填充内置<code class="language-plaintext highlighter-rouge">buffer</code></li>
+      <li>把内置buffer的数据填充到参数中的byte 数组中去</li>
+    </ol>
+
+    <p>以上为整体逻辑.</p>
+
+    <p>​	感觉好像没做什么加速的操作,为啥都说<code class="language-plaintext highlighter-rouge">BufferedInputStream</code>快呢?其实在你读取的数据长度小于<code class="language-plaintext highlighter-rouge">BufferedInputStream</code>内置buffe的时候才会有”快”这个说法.但也不快,本质上还是用<code class="language-plaintext highlighter-rouge">InputStream</code>去读取的数据,那么从网络中读取速度就是一样的,只是在你需要读取的数据长度小于<code class="language-plaintext highlighter-rouge">BufferedInputSteam</code>内置Buffer长度的时候,它会一次性读取填满到buffer,在下次读取的时候就不会从网络中读取了,而是在buffer中读取,直接从内存中读取,减少了一次网络的IO开销,或许这就是”快”的原因?</p>
+
+    <p>那么,这个阻塞是怎么来的?</p>
+
+    <p>​	知道<code class="language-plaintext highlighter-rouge">BufferedInputStream</code>的本质之后,就好分析了.回到业务代码和流检测代码中来,可以发现在流检测代码中,只读取了一个字节.</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="n">input</span><span class="o">.</span><span class="na">read</span><span class="o">();</span><span class="c1">//发生阻塞</span>
+</code></pre></div>    </div>
+
+    <p><code class="language-plaintext highlighter-rouge">read</code>方法的具体实现</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">synchronized</span> <span class="kt">int</span> <span class="nf">read</span><span class="o">()</span>  <span class="kd">throws</span> <span class="nc">IOException</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">connected</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"Pipe not connected"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">closedByReader</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"Pipe closed"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">writeSide</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">writeSide</span><span class="o">.</span><span class="na">isAlive</span><span class="o">()</span>
+                   <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">closedByWriter</span> <span class="o">&amp;&amp;</span> <span class="o">(</span><span class="n">in</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">))</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"Write end dead"</span><span class="o">);</span>
+        <span class="o">}</span>
+   
+        <span class="n">readSide</span> <span class="o">=</span> <span class="nc">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">();</span>
+        <span class="kt">int</span> <span class="n">trials</span> <span class="o">=</span> <span class="mi">2</span><span class="o">;</span>
+        <span class="k">while</span> <span class="o">(</span><span class="n">in</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">closedByWriter</span><span class="o">)</span> <span class="o">{</span>
+                <span class="cm">/* closed by writer, return EOF */</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="k">if</span> <span class="o">((</span><span class="n">writeSide</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">(!</span><span class="n">writeSide</span><span class="o">.</span><span class="na">isAlive</span><span class="o">())</span> <span class="o">&amp;&amp;</span> <span class="o">(--</span><span class="n">trials</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">))</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">IOException</span><span class="o">(</span><span class="s">"Pipe broken"</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="cm">/* might be a writer waiting */</span>
+            <span class="n">notifyAll</span><span class="o">();</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">wait</span><span class="o">(</span><span class="mi">1000</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">InterruptedException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="n">java</span><span class="o">.</span><span class="na">io</span><span class="o">.</span><span class="na">InterruptedIOException</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="kt">int</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">[</span><span class="n">out</span><span class="o">++]</span> <span class="o">&amp;</span> <span class="mh">0xFF</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">out</span> <span class="o">&gt;=</span> <span class="n">buffer</span><span class="o">.</span><span class="na">length</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">in</span> <span class="o">==</span> <span class="n">out</span><span class="o">)</span> <span class="o">{</span>
+            <span class="cm">/* now empty */</span>
+            <span class="n">in</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+        <span class="o">}</span>
+   
+        <span class="k">return</span> <span class="n">ret</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>​	可以看到代码里面会有一个while循环在检查是否具有可读取的数据,如果没有可读取的数据,while将会一直执行下去,只带有可读取的数据位置.阻塞就是因为while在空转.</p>
+
+    <p>​    结案: 因为前面使用<code class="language-plaintext highlighter-rouge">BufferedInputStream</code>读取数据,<code class="language-plaintext highlighter-rouge">BufferedInputStream</code>会一次性,把整个buffer全部填满,默认buffer大小是<code class="language-plaintext highlighter-rouge">private static int DEFAULT_BUFFER_SIZE = 8192;</code>.</p>
+
+    <p>也就是说<code class="language-plaintext highlighter-rouge">BufferedInputStream</code>先把数据 读完了,读到buffer中了,后面代码使用<code class="language-plaintext highlighter-rouge">InputStream</code>的时候当然读取不到数据了,就会在while那里空转,直到有数据为止,可<code class="language-plaintext highlighter-rouge">InputStream</code>哪里知道,数据早就没读取完了,哎,不说了真傻!</p>
+  </li>
+</ol>
+

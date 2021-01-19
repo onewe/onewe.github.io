@@ -1,7 +1,7 @@
 ---
 title: WebLogic Metaspace OOM 解决案例
 key: web logic-classloader-leak-2021-01-19
-date: 2020/1/19 22:01:25
+date: 2021/1/19 22:01:25
 tags:
 - java
 - Weblogic
@@ -10,7 +10,7 @@ categories: java
 author:
   nick: onew
   link: https://onew.me
-subtitle: 虽然自己编译了,能支持官方还是支持一下的比较好.
+subtitle: weblogic 多次重复部署卡死,metaspace OOM
 ---
 
 
@@ -106,7 +106,7 @@ subtitle: 虽然自己编译了,能支持官方还是支持一下的比较好.
 
 ​	由于是线程引起的，所以在验证的过程中，要格外注意，nacos线程是否被正常关闭。
 
-![image-20210119161426721](/Users/onew/Library/Application Support/typora-user-images/image-20210119161426721.png)
+![7Csbdgv84VhxZwt](https://i.loli.net/2021/01/19/7Csbdgv84VhxZwt.jpg)
 
 上图为weblogic一个线程截图。可以看到nacos相关的线程有6个。此时停止应用，nacos线程已经被正常的销毁了。
 

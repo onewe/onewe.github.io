@@ -1,0 +1,106 @@
+<h1 id="一前言">一、前言</h1>
+
+<p>在做项目的时候,本公司这边是使用的前后端分离.部署的时候使用nginx代理前端.但遇到一个比较特殊情况,改服务器上只能装java 和 数据库.哦豁..于是就想着怎么在jfinal 这边搞个前后端分离来解决当前的问题.</p>
+
+<h1 id="二jfinal解决方案">二、jfinal解决方案</h1>
+
+<ul>
+  <li>
+    <p>增加前端路由</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FrontController</span> <span class="kd">extends</span> <span class="nc">Controller</span> <span class="o">{</span>
+  
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">index</span><span class="o">(){</span>
+  
+        <span class="n">render</span><span class="o">(</span><span class="s">"index.html"</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>这个代码很简单,只要返回index.html就可以了.</p>
+  </li>
+  <li>
+    <p>增加Handler</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ApiHandler</span> <span class="kd">extends</span> <span class="nc">Handler</span> <span class="o">{</span>
+  
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Pattern</span> <span class="no">PATTERN</span> <span class="o">=</span> <span class="nc">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"^/api/.*"</span><span class="o">);</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">Pattern</span> <span class="no">STATIC_PATTERN</span> <span class="o">=</span> <span class="nc">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">".*\\.(gif|jpg|png|js|css|pdf|doc|docx|zip|lrm|lrmx|hzb|xls)$"</span><span class="o">);</span>
+  
+  
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">handle</span><span class="o">(</span><span class="nc">String</span> <span class="n">target</span><span class="o">,</span> <span class="nc">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="nc">HttpServletResponse</span> <span class="n">response</span><span class="o">,</span> <span class="kt">boolean</span><span class="o">[]</span> <span class="n">isHandled</span><span class="o">)</span> <span class="o">{</span>
+  
+        <span class="k">if</span><span class="o">(</span><span class="no">PATTERN</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">target</span><span class="o">).</span><span class="na">matches</span><span class="o">()){</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="na">replaceFirst</span><span class="o">(</span><span class="s">"/api/"</span><span class="o">,</span><span class="s">"/"</span><span class="o">);</span>
+            <span class="k">if</span><span class="o">(</span><span class="no">STATIC_PATTERN</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">target</span><span class="o">).</span><span class="na">matches</span><span class="o">()){</span>
+                <span class="k">try</span> <span class="o">{</span>
+                    <span class="n">response</span><span class="o">.</span><span class="na">sendRedirect</span><span class="o">(</span><span class="n">target</span><span class="o">);</span>
+                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+                    <span class="nc">LogKit</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">"转发异常!"</span><span class="o">,</span><span class="n">e</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="k">return</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="n">next</span><span class="o">.</span><span class="na">handle</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">,</span> <span class="n">isHandled</span><span class="o">);</span>
+        <span class="o">}</span><span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="no">STATIC_PATTERN</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">target</span><span class="o">).</span><span class="na">matches</span><span class="o">()){</span>
+            <span class="k">return</span><span class="o">;</span>
+        <span class="o">}</span><span class="k">else</span><span class="o">{</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="s">"/"</span><span class="o">;</span>
+            <span class="n">next</span><span class="o">.</span><span class="na">handle</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">,</span> <span class="n">isHandled</span><span class="o">);</span>
+        <span class="o">}</span>
+  
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>这个apihandler的意思是如果请求地址带了<code class="language-plaintext highlighter-rouge">api</code>前缀则重写target 地址,把target中的<code class="language-plaintext highlighter-rouge">api</code>前缀给替换掉,这样就可以去映射到jfinal中的action.</p>
+
+    <p>如果请求是的静态资源,并且还带了<code class="language-plaintext highlighter-rouge">api</code>前缀则,重定向到没有<code class="language-plaintext highlighter-rouge">api</code>前缀的url地址上去.</p>
+
+    <p>以上条件都不满足的话,则到前端路由上去.</p>
+  </li>
+</ul>
+
+<h1 id="三undertow解决方案">三、undertow解决方案</h1>
+
+<p>如果使用了undertow版本的jfinal,那么还有一招可以解决.</p>
+
+<ul>
+  <li>
+    <p>继承<code class="language-plaintext highlighter-rouge">UndertowServer</code>类,并重写<code class="language-plaintext highlighter-rouge">configHandler</code>方法</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UndertowExtServer</span> <span class="kd">extends</span> <span class="nc">UndertowServer</span> <span class="o">{</span>
+  
+    <span class="kd">protected</span> <span class="nf">UndertowExtServer</span><span class="o">(</span><span class="nc">UndertowConfig</span> <span class="n">undertowConfig</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">undertowConfig</span><span class="o">);</span>
+    <span class="o">}</span>
+  
+    <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="nc">HttpHandler</span> <span class="nf">configHandler</span><span class="o">(</span><span class="nc">HttpHandler</span> <span class="n">next</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="nc">Handlers</span><span class="o">.</span><span class="na">predicates</span><span class="o">(</span><span class="nc">PredicatedHandlersParser</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">"regex['/api/upload/(.*)'] -&gt; rewrite['/upload/${1}']\n regex['/api/file/(.*)'] -&gt; rewrite['/file/${1}']"</span><span class="o">,</span><span class="n">getClass</span><span class="o">().</span><span class="na">getClassLoader</span><span class="o">()),</span><span class="n">next</span><span class="o">);</span>
+    <span class="o">}</span>
+  
+    <span class="kd">public</span> <span class="kd">static</span> <span class="nc">UndertowExtServer</span> <span class="nf">create</span><span class="o">(</span><span class="nc">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="nc">JFinalConfig</span><span class="o">&gt;</span> <span class="n">jfinalConfigClass</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">UndertowExtServer</span><span class="o">(</span><span class="k">new</span> <span class="nc">UndertowConfig</span><span class="o">(</span><span class="n">jfinalConfigClass</span><span class="o">));</span>
+    <span class="o">}</span>
+  
+    <span class="kd">public</span> <span class="kd">static</span> <span class="nc">UndertowExtServer</span> <span class="nf">create</span><span class="o">(</span><span class="nc">String</span> <span class="n">jfinalConfigClass</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">UndertowExtServer</span><span class="o">(</span><span class="k">new</span> <span class="nc">UndertowConfig</span><span class="o">(</span><span class="n">jfinalConfigClass</span><span class="o">));</span>
+    <span class="o">}</span>
+  
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">UndertowExtServer</span> <span class="nf">configWeb</span><span class="o">(</span><span class="nc">Consumer</span><span class="o">&lt;</span><span class="nc">WebBuilder</span><span class="o">&gt;</span> <span class="n">webBuilder</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">webBuilder</span> <span class="o">=</span> <span class="n">webBuilder</span><span class="o">;</span>
+        <span class="k">return</span> <span class="k">this</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>关键在于<code class="language-plaintext highlighter-rouge">"regex['/api/upload/(.*)'] -&gt; rewrite['/upload/${1}']\n regex['/api/file/(.*)'] -&gt; rewrite['/file/${1}']"</code>这句代码,通过正则表达式的方式,去匹配url,然后rewrite url,达到前后端分离的效果,但是这种办法还是要在jfinal中增加一个前端路由.</p>
+  </li>
+</ul>
+
+<h1 id="四总结">四、总结</h1>
+
+<p>以上就是两种解决方案,结合起来使用更爽哟!如果小伙伴有其他的解决方案,请留言给我,谢谢啦.</p>

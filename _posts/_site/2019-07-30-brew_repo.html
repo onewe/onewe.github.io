@@ -1,0 +1,27 @@
+<h2 id="一前言">一、前言</h2>
+
+<p>最近大面积封杀梯子,导致国内开发者用户,更新软件十分困难.比如说我,brew update 一下都要等很久.更别说通过brew更新软件了.</p>
+
+<h2 id="二换国内源">二、换国内源</h2>
+
+<ul>
+  <li>替换为中科大源</li>
+</ul>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># 替换brew.git：
+cd "$(brew --repo)"
+git remote set-url origin https://mirrors.ustc.edu.cn/brew.git
+
+# 替换homebrew-core.git:
+cd "$(brew --repo)/Library/Taps/homebrew/homebrew-core"
+git remote set-url origin https://mirrors.ustc.edu.cn/homebrew-core.git
+
+# 添加环境变量
+export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
+</code></pre></div></div>
+
+<p>以上几步就搞定了,速度飞起.</p>
+
+<blockquote>
+  <p>以上步骤参考:https://www.jianshu.com/p/005963a4d843</p>
+</blockquote>

@@ -1,0 +1,104 @@
+<h1 id="一前言">一、前言</h1>
+
+<p>有现成的C库为什么要自己造轮子呢?我发现大家对造轮子情有独钟呀,所以我也来试一试,免得被C圈里面的人排挤.</p>
+
+<h1 id="二上代码">二、上代码</h1>
+
+<ol>
+  <li>
+    <p>头文件logger.h</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#ifndef LOGGER_H_
+#define LOGGER_H_
+</span>   
+<span class="cp">#include &lt;Windows.h&gt;
+#include &lt;tchar.h&gt;
+#include &lt;stdio.h&gt;
+</span>   
+<span class="cp">#if !defined(LOG_TAG)
+#define LOG_TAG          L"NO_TAG"
+#endif
+</span>   
+<span class="cp">#include &lt;stdarg.h&gt;
+#include &lt;time.h&gt;
+</span>   
+<span class="cp">#define __STR2WSTR(str) L##str
+#define _STR2WSTR(str) __STR2WSTR(str)
+#define __FUNCTIONW__ _STR2WSTR(__FUNCTION__)
+</span>   
+   
+<span class="cm">/*日志级别枚举类型*/</span>
+<span class="k">enum</span> <span class="n">Level</span> <span class="p">{</span> <span class="n">L_DEBUG</span><span class="p">,</span> <span class="n">L_INFO</span><span class="p">,</span> <span class="n">L_ERROR</span> <span class="p">};</span>
+<span class="cm">/*打印debug级别的日志*/</span>
+<span class="cp">#define log_d(...) PrintLog(L_DEBUG,LOG_TAG,__FUNCTIONW__,__LINE__,__VA_ARGS__) 
+</span><span class="cm">/*打印info级别的日志*/</span>
+<span class="cp">#define log_i(...) PrintLog(L_INFO,LOG_TAG,__FUNCTIONW__,__LINE__,__VA_ARGS__)
+</span><span class="cm">/*打印error级别的日志*/</span>
+<span class="cp">#define log_e(...) PrintLog(L_ERROR,LOG_TAG,__FUNCTIONW__,__LINE__,__VA_ARGS__)
+</span>   
+<span class="cp">#endif // LOGGER_H
+</span>   
+   
+<span class="c1">//打印日志</span>
+<span class="kt">void</span> <span class="nf">PrintLog</span><span class="p">(</span><span class="kt">int</span> <span class="n">level</span><span class="p">,</span><span class="n">TCHAR</span> <span class="o">*</span> <span class="n">tag</span><span class="p">,</span><span class="n">TCHAR</span> <span class="o">*</span> <span class="n">func</span><span class="p">,</span><span class="kt">long</span> <span class="n">line</span><span class="p">,</span><span class="n">TCHAR</span> <span class="o">*</span> <span class="n">format</span><span class="p">,...);</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>c文件</p>
+
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include "Logger.h"
+</span>   
+<span class="c1">//日志的最大长度</span>
+<span class="cp">#define LOG_MAX_BUF_SIZE 1024
+</span><span class="cm">/*时间字符串最大64*/</span>
+<span class="cp">#define TIME_BUFLEN 64
+#define TIME_FORMAT L"%Y-%m-%d %H:%M:%S"
+</span><span class="cm">/*日志前面部分的格式 [时间]  日志级别  标签*/</span>
+<span class="cp">#define LOG_FORMAT L"[%20s %s] %s/%s %s:%ld:   "
+</span>   
+<span class="k">static</span> <span class="n">TCHAR</span> <span class="o">*</span> <span class="n">leveInfo</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="s">L"D"</span><span class="p">,</span><span class="s">L"I"</span><span class="p">,</span><span class="s">L"E"</span> <span class="p">};</span>
+<span class="k">static</span> <span class="n">TCHAR</span> <span class="n">logBuf</span><span class="p">[</span><span class="n">LOG_MAX_BUF_SIZE</span><span class="p">];</span>
+   
+   
+<span class="c1">//获取当前系统时间</span>
+<span class="n">TCHAR</span><span class="o">*</span> <span class="nf">GetTime</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">static</span> <span class="n">TCHAR</span> <span class="n">timeStr</span><span class="p">[</span><span class="n">TIME_BUFLEN</span><span class="p">];</span>
+	<span class="kt">time_t</span> <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
+	<span class="k">struct</span> <span class="n">tm</span> <span class="o">*</span> <span class="n">local</span> <span class="o">=</span> <span class="n">localtime</span><span class="p">(</span><span class="o">&amp;</span><span class="n">t</span><span class="p">);</span>
+	<span class="n">_tcsftime</span><span class="p">(</span><span class="n">timeStr</span><span class="p">,</span> <span class="n">TIME_BUFLEN</span><span class="p">,</span> <span class="n">TIME_FORMAT</span><span class="p">,</span> <span class="n">local</span><span class="p">);</span>
+	<span class="k">return</span> <span class="n">timeStr</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="c1">//获取进程ID</span>
+<span class="n">TCHAR</span> <span class="o">*</span><span class="nf">GetPID</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">static</span> <span class="n">TCHAR</span> <span class="n">pidBuf</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>
+	<span class="kt">long</span> <span class="n">pid</span> <span class="o">=</span> <span class="n">GetCurrentProcessId</span><span class="p">();</span>
+	<span class="n">_stprintf</span><span class="p">(</span><span class="n">pidBuf</span><span class="p">,</span> <span class="s">L"PID:%04ld"</span><span class="p">,</span> <span class="n">GetCurrentProcessId</span><span class="p">());</span>
+   
+	<span class="k">return</span> <span class="n">pidBuf</span><span class="p">;</span>
+<span class="p">}</span>
+   
+   
+   
+<span class="c1">//打印日志</span>
+<span class="kt">void</span> <span class="nf">PrintLog</span><span class="p">(</span><span class="kt">int</span> <span class="n">level</span><span class="p">,</span> <span class="n">TCHAR</span> <span class="o">*</span> <span class="n">tag</span><span class="p">,</span> <span class="n">TCHAR</span> <span class="o">*</span> <span class="n">func</span><span class="p">,</span> <span class="kt">long</span> <span class="n">line</span><span class="p">,</span> <span class="n">TCHAR</span> <span class="o">*</span> <span class="n">format</span><span class="p">,</span> <span class="p">...)</span> <span class="p">{</span>
+	<span class="c1">//时间</span>
+	<span class="n">TCHAR</span><span class="o">*</span> <span class="n">timeStr</span> <span class="o">=</span> <span class="n">GetTime</span><span class="p">();</span>
+	<span class="c1">//日志等级</span>
+	<span class="n">TCHAR</span><span class="o">*</span> <span class="n">levelStr</span> <span class="o">=</span> <span class="n">leveInfo</span><span class="p">[</span><span class="n">level</span><span class="p">];</span>
+	<span class="n">TCHAR</span><span class="o">*</span> <span class="n">pid</span> <span class="o">=</span> <span class="n">GetPID</span><span class="p">();</span>
+	<span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">_stprintf</span><span class="p">(</span><span class="n">logBuf</span><span class="p">,</span> <span class="n">LOG_FORMAT</span><span class="p">,</span><span class="n">timeStr</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">levelStr</span><span class="p">,</span><span class="n">tag</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span><span class="n">line</span><span class="p">);</span>
+	<span class="kt">va_list</span> <span class="n">args</span><span class="p">;</span>
+	<span class="n">va_start</span><span class="p">(</span><span class="n">args</span><span class="p">,</span><span class="n">format</span><span class="p">);</span>
+	<span class="n">_vsntprintf</span><span class="p">(</span><span class="n">logBuf</span> <span class="o">+</span> <span class="n">index</span><span class="p">,</span> <span class="n">LOG_MAX_BUF_SIZE</span> <span class="o">-</span> <span class="n">index</span><span class="p">,</span> <span class="n">format</span><span class="p">,</span><span class="n">args</span><span class="p">);</span>
+	<span class="n">va_end</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+	<span class="c1">//打印日志,这个FILE 自己定义,可以是console,也可以是文件</span>
+	<span class="n">_ftprintf</span><span class="p">(</span><span class="kt">FILE</span><span class="p">,</span><span class="n">logBuf</span><span class="p">);</span>
+   	
+<span class="p">}</span>
+</code></pre></div>    </div>
+
+    <ul>
+      <li>注意在windows平台上,输出中文到文件里面,必须是宽字符,否则看不到输出内容,或者是乱码</li>
+    </ul>
+  </li>
+</ol>
