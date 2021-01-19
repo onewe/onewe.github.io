@@ -66,11 +66,10 @@ subtitle: weblogic 多次重复部署卡死,metaspace OOM
 
 ​	解决问题的前提是能够复现问题，好在这次问题比较容易复现出来。
 
- - 环境：
-   	- weblogic 12c
-    - jdk 1.8
-    - metaspace 512M maxMetaspace1024M
-
+- 环境：
+  - weblogic 12c
+  - jdk 1.8
+  - metaspace 512M maxMetaspace1024M
 - 步骤：
   - 在控制台中使用更新功能，重复部署多次
 - 观察：
