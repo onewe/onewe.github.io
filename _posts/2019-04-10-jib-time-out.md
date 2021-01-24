@@ -18,11 +18,11 @@ subtitle: 之前使用jib打包的时候还好好,后面经常莫名其妙的遇
 
 # 一、问题分析
 
-![images](https://gitee.com/oneww/onew_image/raw/master/jib_maven_info.png)
+![7n51Up](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/7n51Up.jpg)
 
 从上面报错的信息来看,看不出啥问题,我们在maven命令后面加上-x参数看看具体的问题
 
-![images](https://gitee.com/oneww/onew_image/raw/master/jib_maven_error.png)
+![xu3vlB](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/xu3vlB.jpg)
 
 看到上面的信息是连接某个地址然后超时了.emmmm,会不会是被墙了???在maven上加上代理试试看
 
@@ -49,6 +49,6 @@ subtitle: 之前使用jib打包的时候还好好,后面经常莫名其妙的遇
 
 在试一试打包
 
-![images](https://gitee.com/oneww/onew_image/raw/master/jib_maven_success.png)
+![w2tR3o](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/w2tR3o.jpg)
 
 👌,打包成功.

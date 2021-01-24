@@ -240,7 +240,7 @@ public static AbstractBeanDefinition createBeanDefinition(
 
 ​	`GenericBeanDefinition`是用于描述`bean`,该类继承了`AbstractBeanDefinition`.如下图:
 
-![images](https://gitee.com/oneww/onew_image/raw/master/GenericBeanDefinition.png)
+![5BRtQP](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/5BRtQP.jpg)
 
 ​	总共有2个作用,描述`bean`的信息,访问`bean`中的属性值.
 
@@ -386,8 +386,8 @@ public void parseMetaElements(Element ele, BeanMetadataAttributeAccessor attribu
 ```
 
 	1. 遍历所有节点
- 	2. 解析meta标签
- 	3. 设置值到attributeAccessor中
+	2. 解析meta标签
+	3. 设置值到attributeAccessor中
 
 
 

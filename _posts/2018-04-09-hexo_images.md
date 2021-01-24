@@ -38,9 +38,9 @@ subtitle: 中国图床哪家强?emmmmm 码云很强!
 目前我想达到的目的是,在写博客的时候,图片文件放在本地,这样可以边预览编写.当写好后提交到码云上面的时候,自动把图片换成码云的链接,从而达到图床的效果.  
 
 - 目录结构如下,hexo的md文件和图片文件夹在同一个目录,这样写博客的使用就可以使用相对路径来引用图片了
-![images](https://gitee.com/oneww/onew_image/raw/master/hexo_image_dir.png) 
+![Mkj3MR](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/Mkj3MR.jpg) 
 - 把img目录跟码云挂钩,这样新加入的图片直接提交到码云上去,达到图床的效果
-![images](https://gitee.com/oneww/onew_image/raw/master/hexo_image_gitee.png)
+![cW8utS](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/cW8utS.jpg)
 - 使用脚本提交md文件,并且修md文件中的图片的链接.脚本很简单,如下
 
 	```shell

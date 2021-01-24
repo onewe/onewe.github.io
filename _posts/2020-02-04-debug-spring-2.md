@@ -77,7 +77,7 @@ subtitle: spring 资源加载器
 
 ​	`DefaultResourceLoader` 是`ResourceLoader`的默认实现.
 
-![images](https://gitee.com/oneww/onew_image/raw/master/DefaultResourceLoader.png)
+![yQS6mB](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/yQS6mB.jpg)
 
 上图可以看到 `DefaultResourceLoader` 还有3个子类进行了功能的扩展.先看看`ResourceLoader`这个接口.
 

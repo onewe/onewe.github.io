@@ -371,7 +371,7 @@ protected ConfigurableApplicationContext createApplicationContext() {
 
 ​	很显然这里的类型是 SERVLET 所以创建了 AnnotationConfigServletWebServerApplicationContext,继承关系如下.
 
-![images](https://gitee.com/oneww/onew_image/raw/master/AnnotationConfigServletWebServerApplicationContext.png)
+![LgjEPe](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/LgjEPe.jpg)
 
 ​	熟悉spring的同学是不是感觉与`ClassPathXmlApplicationContext`差不多？我觉得是差不多的,只是干事的方式有点区别.
 

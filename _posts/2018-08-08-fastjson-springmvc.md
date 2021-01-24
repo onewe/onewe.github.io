@@ -25,7 +25,7 @@ subtitle: 在springmvc中使用aop打印日志,莫名其妙的遇到一个fastjs
 
 看看异常信息吧!
 
-![images](https://gitee.com/oneww/onew_image/raw/master/fastjson_springmvc_exception.png)
+![1CfMpX](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/1CfMpX.jpg)
 
 从异常的信息可以看出,在fastjson把对象转json字符串的时候遇到了问题,貌似从这个图片中看不出啥问题,该图片下面还有一段异常信息,如下:
 
@@ -54,7 +54,7 @@ at org.springframework.aop.aspectj.AbstractAspectJAdvice.invokeAdviceMethodWithG
 
 ​		再看一下异常信息,按照打印的栈信息来看,是`RequestFacade`对象中的`getAsyncContext`方法被调用了,但是工程里面并没用用到`RequestFacade`对象呀,查看`RequestFacade`类的源码过后发现`RequestFacade`其实是`HttpServletRequest`的一个具体实现.那么问题就定位到了,fastjson把`HttpServletRequest`序列化了,只要把方法上的`HttpServletRequest` 参数去掉就可以了.
 
-![images](https://gitee.com/oneww/onew_image/raw/master/fastjson_springmvc_ok.png)
+![MZ7BAI](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/MZ7BAI.jpg)
 
 
 

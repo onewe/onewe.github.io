@@ -85,7 +85,7 @@ public final BeanDefinitionRegistry getRegistry() {
 
 ​	而这个reader则是`XmlBeanDefinitionReader`,`registry`对象则通过`XmlBeanDefinitionReader`的构造方法传入进来,实际上这个`registry`对象就是`XmlBeanFactory`或者说是`DefaultListableBeanFactory`,因为这两个有继承关系.
 
-​	![images](https://gitee.com/oneww/onew_image/raw/master/XmlBeanFactory.png)
+​	![k5xTOv](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/k5xTOv.jpg)
 
 
 

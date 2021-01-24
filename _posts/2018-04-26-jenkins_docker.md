@@ -32,7 +32,7 @@ jenkins 镜像可以在docker厂库里面找到,选择靠谱的官方docker镜�
 
 运行起来后就可以访问jenkins主页了,第一次访问jenkins的时候需要输入一个jenkins生产的临时密码.这个密码可以用`docker logs myjenkins`命令来查看容器运行的日志.  
 
-![images](https://gitee.com/oneww/onew_image/raw/master/jenkins_docker_password.png)
+![gOgFiJ](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/gOgFiJ.jpg)
 
 ok.
 

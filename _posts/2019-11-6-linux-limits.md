@@ -22,23 +22,23 @@ subtitle: nginx提示文件数问题,修改limits nginx重启不生效,limits �
 
  - 查看当前open files数量 `ulimit -a`
 
-   ![images](https://gitee.com/oneww/onew_image/raw/master/centos_limits_info.png)
+   ![pT9JnZ](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/pT9JnZ.jpg)
 
  - 测试服务最高能到多少(当然这个数字并不是越大越好)
 
-   ![images](https://gitee.com/oneww/onew_image/raw/master/centos_limits_max.png)
+   ![j2bwuU](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/j2bwuU.jpg)
 
    图中可以看到最大值在1000000左右.**一定不要试图超过这个值,不然ssh会连接不上服务器的,哪怕物理终端都会登陆不上去,切记!**
 
 - 修改配置使之永久生效.打开`vim /etc/security/limits.conf`,在文件末尾添加以下两行参数.
 
-  ![images](https://gitee.com/oneww/onew_image/raw/master/centos_limits_edit.png)
+  ![5Af97a](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/5Af97a.jpg)
 
   上述两行参数为,任何用户的文件数都设置为1000000,保存.重启.
 
 - 验证是否生效 `ulimit -n`
 
-  ![images](https://gitee.com/oneww/onew_image/raw/master/centos_limits_review.png)
+  ![cc2qvr](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/cc2qvr.jpg)
 
 
 

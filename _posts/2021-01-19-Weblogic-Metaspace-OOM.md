@@ -66,7 +66,7 @@ subtitle: weblogic 多次重复部署卡死,metaspace OOM
 
 ​	解决问题的前提是能够复现问题，好在这次问题比较容易复现出来。
 
-- 环境：
+ - 环境：
   - weblogic 12c
   - jdk 1.8
   - metaspace 512M maxMetaspace1024M
@@ -76,7 +76,7 @@ subtitle: weblogic 多次重复部署卡死,metaspace OOM
   - 使用jdk自带*Java VisualVM*，观察metaspace内存的增长，以及一个class的加载数量和卸载数量
 - 现象：
   - class一直在增长，没有出现过大幅度的下跌
-  - ![6I8w1m7fhSo9Grx](https://i.loli.net/2021/01/19/6I8w1m7fhSo9Grx.png)
+  - ![Ih4A7r](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/Ih4A7r.jpg)
   - 总共更新了2次载入了7W+的类，卸载却不到3K，这个结果就离谱。
 
 ### 3.2 内存分析
@@ -87,11 +87,11 @@ subtitle: weblogic 多次重复部署卡死,metaspace OOM
 
 ​	通过mat分析，检测出有3个问题,2个都是ChangeAwareCloader：
 
-![Mwg4flXxK9pU5HL](https://i.loli.net/2021/01/19/Mwg4flXxK9pU5HL.png)
+![VSAoKt](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/VSAoKt.jpg)
 
 看来方向没错，去weblogic官方看了一下，上图中的classloader是负责更新class的。点开详情看一下，发现是nacos的线程hold住了classloader导致，嘿嘿破案了。
 
-![wOGNxqotD6rgu18](https://i.loli.net/2021/01/19/wOGNxqotD6rgu18.png)
+![xGL86x](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/xGL86x.jpg)
 
 ### 3.3 这该死的线程
 
@@ -105,17 +105,17 @@ subtitle: weblogic 多次重复部署卡死,metaspace OOM
 
 ​	由于是线程引起的，所以在验证的过程中，要格外注意，nacos线程是否被正常关闭。
 
-![7Csbdgv84VhxZwt](https://i.loli.net/2021/01/19/7Csbdgv84VhxZwt.jpg)
+![yT7j6g](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/yT7j6g.jpg)
 
 上图为weblogic一个线程截图。可以看到nacos相关的线程有6个。此时停止应用，nacos线程已经被正常的销毁了。
 
 ​	线程已经被正常销毁，再来验证是否能够正常卸载class。重复部署2次，再进行观察。
 
-![8WXGmiIpM2fdDaK](https://i.loli.net/2021/01/19/8WXGmiIpM2fdDaK.png)
+![R0d9xk](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/R0d9xk.jpg)
 
 ​	还是离谱，依旧没有被卸载，看来问题没有被根本解决。会不会是还有啥线程没有被关闭呢。再去找找看看。先停止应用，看看哪些线程还在后台运行。
 
-![V1Za2sfGzMFmyx7](https://i.loli.net/2021/01/19/V1Za2sfGzMFmyx7.jpg)
+![NBo2Ot](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/NBo2Ot.jpg)
 
 扒了一下，还有一个线程没有正常销毁。改改代码再试一下吧0.0.
 
@@ -127,7 +127,7 @@ subtitle: weblogic 多次重复部署卡死,metaspace OOM
 
 ​	继续测试，重复部署，验证是否能够正常卸载class。
 
-![EhGkgSMz71sbZeC](https://i.loli.net/2021/01/19/EhGkgSMz71sbZeC.png)
+![Ek1XEF](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/Ek1XEF.jpg)
 
 还是离谱，加载了7W多的类，卸载才4K多点，这还是不正常。果然，这个工程的问题很多呀。
 
@@ -137,11 +137,11 @@ subtitle: weblogic 多次重复部署卡死,metaspace OOM
 
 ​	线程的问题解决了，但问题依旧，只能再dump一份内存看看。
 
-![u6wdjzoRpvADNYT](https://i.loli.net/2021/01/19/u6wdjzoRpvADNYT.png)
+![NSP45r](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/NSP45r.jpg)
 
 问题还是在classLoader上，去详情看看。
 
-![YPCexIzNHrbq3Ud](https://i.loli.net/2021/01/19/YPCexIzNHrbq3Ud.png)
+![bALy32](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/bALy32.jpg)
 
 classloader被Logger给hold住了，这有点奇怪了。由上图可以看出，changeAwareClassLoader加载了LoggingHandler，在Logger中引用了LoggingHandler，这个Logger是系统类，
 
@@ -149,11 +149,11 @@ classloader被Logger给hold住了，这有点奇怪了。由上图可以看出�
 
 ​	只能翻一下LoggingHandler的代码，看下为啥要去跟Logger扯上关系。
 
-![DNiQLXeBqAIna6K](https://i.loli.net/2021/01/19/DNiQLXeBqAIna6K.png)
+![l7z3FW](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/l7z3FW.jpg)
 
 这个玩意儿在启动的时候回去注册一下，获取的是系统的Logger，怪不得会扯上关系。不知道为啥没有被取消注册，取消注册的方法倒是有个。
 
-![Erv2pmXdNyPRlGq](https://i.loli.net/2021/01/19/Erv2pmXdNyPRlGq.png)
+![vuWgup](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/vuWgup.jpg)
 
 猜测是jar包版本冲突导致出现了异常，就没有把取消注册流程给走完。问了一下同事，说这个LoggingHandler是属于一个监控，这个监控比较老，可以直接下掉。那就不去纠结为啥没有取消注册了，直接下掉看疗效。
 
@@ -163,19 +163,19 @@ classloader被Logger给hold住了，这有点奇怪了。由上图可以看出�
 
 ​	把监控的jar包下掉，看看能不能达到预期的效果。
 
-![ZhkNoL9AjsxR5dn](https://i.loli.net/2021/01/19/ZhkNoL9AjsxR5dn.png)
+![mE705e](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/mE705e.jpg)
 
 weblogic初始状态，一片祥和。
 
 重复部署3次：
 
-![seum7EkIF83Qb1i](https://i.loli.net/2021/01/19/seum7EkIF83Qb1i.png)
+![EB4BE2](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/EB4BE2.jpg)
 
 还是没卸载，离谱，看来要翻车了。不急陪他耍耍，等他个10分钟，看他自己投降。是不是觉得是玄学😂。对，还真不是玄学，有些东西没有及时释放，是因为在finalize队列中排队呢，等一下就好。
 
 10分钟之后，不对应该是出去吃饭过后：
 
-![5ybVJMqUr3I1WjR](https://i.loli.net/2021/01/19/5ybVJMqUr3I1WjR.png)
+![Fcw936](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/Fcw936.jpg)
 
 metaspace的占用水平已回归到正常的水平，类卸载从4000到了28000。
 

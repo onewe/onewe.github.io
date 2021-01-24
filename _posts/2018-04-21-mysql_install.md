@@ -31,17 +31,17 @@ subtitle: 踩坑,尝试一下mysql8.x,不知道安装的时候有何不同.
 ## 二、下载Mysql 8.x
 
 1. 打开官网https://www.mysql.com/downloads 选择MySQL Community Edition 版
-2. 选择操作系统,这里选择Redhat 7.x的全家桶版本![images](https://gitee.com/oneww/onew_image/raw/master/mysql_dwonload.png)
+2. 选择操作系统,这里选择Redhat 7.x的全家桶版本!![ulVdl6](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/ulVdl6.jpg)
 
 
 
 ## 三、安装Mysql
 
-1. 上传安装包到服务器.  ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_ls.png)
+1. 上传安装包到服务器.  ![xGifcX](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/xGifcX.jpg)
 
-2. 解压压缩包`mkdir mysql && tar -xvf mysql-8.0.11-1.el7.x86_64.rpm-bundle.tar -C ./mysql`该命令会把压缩包解压到当前目录下的mysql目录下.  ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_tar_xvf.png)  
+2. 解压压缩包`mkdir mysql && tar -xvf mysql-8.0.11-1.el7.x86_64.rpm-bundle.tar -C ./mysql`该命令会把压缩包解压到当前目录下的mysql目录下.  ![uyCC1b](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/uyCC1b.jpg)  
 
-   ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_tar_ll.png)  
+   ![kB90jp](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/kB90jp.jpg)  
 
 3. 安装mysql
 
@@ -61,17 +61,17 @@ subtitle: 踩坑,尝试一下mysql8.x,不知道安装的时候有何不同.
 
    1. 启动服务`systemctl start mysqld`
 
-   2. 检查服务是否启动成功`systemc status mysqld.`  ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_status.png)  
+   2. 检查服务是否启动成功`systemc status mysqld.`  ![JuJhW4](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/JuJhW4.jpg)  
 
-   3. 启动成功后,mysql会默认生成root密码,可以在启动日志中查看`cat /var/log/mysqld.log.`  ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_password.png)  
+   3. 启动成功后,mysql会默认生成root密码,可以在启动日志中查看`cat /var/log/mysqld.log.`  ![img](https://gitee.com/oneww/onew_image/raw/master/mysql_password.png)  
 
-   4. 尝试登陆`mysql -uroot -p`输入刚才生成密码.  ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_login.png)
+   4. 尝试登陆`mysql -uroot -p`输入刚才生成密码.  ![FxqonP](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/FxqonP.jpg)
 
-   5. 由于刚才生成的密码只是mysql的临时密码,所以需要重新设置root密码,不然操作mysql会出错误提示,并拒绝操作. ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_error.png)`ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement.`提示必须重置用户密码.  
+   5. 由于刚才生成的密码只是mysql的临时密码,所以需要重新设置root密码,不然操作mysql会出错误提示,并拒绝操作. ![VMimrI](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/VMimrI.jpg)`ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement.`提示必须重置用户密码.  
 
    6. 重置密码
 
-      `ALTER USER 'root'@'localhost' IDENTIFIED BY 'test110119';`使用这句语句来重置密码,但可能会收到一个安全策略引起的错误提示`Your password does not satisfy the current policy requirements`该错误的意思,密码太简单了.  ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_week_password.png)
+      `ALTER USER 'root'@'localhost' IDENTIFIED BY 'test110119';`使用这句语句来重置密码,但可能会收到一个安全策略引起的错误提示`Your password does not satisfy the current policy requirements`该错误的意思,密码太简单了.![Ai3LWR](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/Ai3LWR.jpg)  ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_week_password.png)
 
       密码设置复杂点就ok了.也可以修改安全策略(validate_password_policy),validate_password_policy有以下几个值可以参考. 
 
@@ -81,9 +81,9 @@ subtitle: 踩坑,尝试一下mysql8.x,不知道安装的时候有何不同.
       | `1` or `MEDIUM` | Length; numeric, lowercase/uppercase, and special characters | 必须符合长度,包含数字,大小写,特殊字符          |
       | `1` or `MEDIUM` | Length; numeric, lowercase/uppercase, and special characters; dictionary file | 必须符合长度,包含数字,大小写,特殊字符,字典文件 |
 
-      validate_password_policy 默认值为1,如果要重置可以使用`set global validate_password_policy=0`,改为0,密码就只校验长度了.笔者这里不选择修改策略的方式,而是采用复杂的密码.  ![images](https://gitee.com/oneww/onew_image/raw/master/mysql_strong_password.png)
+      validate_password_policy 默认值为1,如果要重置可以使用`set global validate_password_policy=0`,改为0,密码就只校验长度了.笔者这里不选择修改策略的方式,而是采用复杂的密码.  ![u2adMY](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/u2adMY.jpg)
 
-      ​
+      
 
 ## 四、远程登录
 

@@ -50,19 +50,19 @@ subtitle: linux上用win,体验如何??来试一试
    --virt-type kvm
    ```
 
-3. 运行以上命令之后就开始创建虚拟机了.![images](https://gitee.com/oneww/onew_image/raw/master/kvm-install-win-command.png)
+3. 运行以上命令之后就开始创建虚拟机了.![lIfLKf](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/lIfLKf.jpg)
 
    以上的错误信息请忽略,不会产生太大的影响.
 
 4. 接下来连接vnc进行图形化安装,当然可以使用webVritMgr进行图形化安装.进行vnc连接的话要使用隧道映射到本地的端口,因为5910顿口只能在宿主机上访问`ssh -L 5910:127.0.0.1:5910 root@192.168.3.110`把端口映射到本地.
 
-5. 连接vnc进行安装![images](https://gitee.com/oneww/onew_image/raw/master/kvm-win7-GUI.png)
+5. 连接vnc进行安装![yQUuJM](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/yQUuJM.jpg)
 
-   点击浏览按钮,加载刚才我们下载好的virtio驱动包![images](https://gitee.com/oneww/onew_image/raw/master/kvm-diver-GUI.png)
+   点击浏览按钮,加载刚才我们下载好的virtio驱动包![img](https://gitee.com/oneww/onew_image/raw/master/kvm-diver-GUI.png)
 
-   安装驱动![安装驱动](./img/kvm-install-driver.png)
+   安装驱动![安装驱动](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/kvm-install-driver.png)
 
-   安装好以后就是我们喜闻乐见的下一步下一步的安装了.值得注意是,在安装过程中,虚拟机会重启多次,如果虚拟没有自己启动,请手动重启一下.附上安装好的截图![images](https://gitee.com/oneww/onew_image/raw/master/kvm-install-finish.png)
+   安装好以后就是我们喜闻乐见的下一步下一步的安装了.值得注意是,在安装过程中,虚拟机会重启多次,如果虚拟没有自己启动,请手动重启一下.附上安装好的截图![kvm-install-finish](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/kvm-install-finish.png)
 
 
 

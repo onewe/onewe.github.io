@@ -87,7 +87,7 @@ test--one
 
 ​	可以看到spring从xml读取到了配置信息,并且符合预期的获取了bean.那么spring是如何加载xml的?在创建XmlBeanFactory的时候,构造方法接收的是一个Resource对象,Resource是个接口,这里直接使用的它的实现类ClassPathResource.
 
-![images](https://gitee.com/oneww/onew_image/raw/master/ClassPathResource.png)
+![QTiItN](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/QTiItN.jpg)
 
 ## 2.1 Resource 接口
 
@@ -428,7 +428,7 @@ public class EncodedResource implements InputStreamSource {
 
 # 三、Resource 体系
 
-![images](https://gitee.com/oneww/onew_image/raw/master/resource.png)
+![khUzCF](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/khUzCF.jpg)
 
 - FileSystemResource
 

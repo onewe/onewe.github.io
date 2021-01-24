@@ -23,7 +23,7 @@ subtitle: windows服务,坑真多.此文作为踩坑记录.
 
 1. 安装服务,相当于在服务控制器中注册一个服务.
 
-   ![images](https://gitee.com/oneww/onew_image/raw/master/windows_service_scm.jpg)
+   ![IoW3Qg](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/IoW3Qg.jpg)
 
    ```c
    //判断是否已经安装过服务

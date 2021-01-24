@@ -634,7 +634,7 @@ protected RootBeanDefinition getMergedBeanDefinition(
 
 ​	说这代码之前,先说说spring中的基本数据结构.在spring中基本数据结构为`BeanDefinition`,通过spring产生的普通bean为`GenericBeanDefinition`.而spring后续处理的类型则为`RootBeanDefinition`.关系图如下:
 
-![images](https://gitee.com/oneww/onew_image/raw/master/BeanDefinition.png)
+![zlb4uh](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/zlb4uh.jpg)
 
 ​	这两个长的都差不多,只不过后续处理的步骤用到的类型为`RootBeanDefinition`,所以在上面的方法中,进行递归转换.
 

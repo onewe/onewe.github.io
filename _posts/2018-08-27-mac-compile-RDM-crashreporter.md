@@ -32,11 +32,11 @@ subtitle: 在Redis Desktop Manager 提供的源码中crashreporter,并不是必�
 
 - 配置QT编译参数,在额外参数里面加上`DESTDIR+=.`,构建目录随你心情了.
 
-  ![images](https://gitee.com/oneww/onew_image/raw/master/mac_compile_crash_config.png)
+  ![LQXrg9](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/LQXrg9.jpg)
 
 - 修改 `Sources\src\main.cpp`中的代码,因为有些变量没有定义,所以会导致编译不通过,需要手动定义一下变量
 
-  ![images](https://gitee.com/oneww/onew_image/raw/master/mac_compile_crash_main.png)在mian函数上添加以下代码:
+  ![WdBlhH](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/WdBlhH.jpg)在mian函数上添加以下代码:
 
   ```c
   /**

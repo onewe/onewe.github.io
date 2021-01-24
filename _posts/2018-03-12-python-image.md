@@ -72,5 +72,6 @@ out.release()
 
 # 效果
  视频就不展示,看一下gif图吧  
+
  ![image](https://upload-images.jianshu.io/upload_images/8958298-5fc487339f9d5554.gif?imageMogr2/auto-orient/strip)
 

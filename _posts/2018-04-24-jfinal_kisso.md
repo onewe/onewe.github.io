@@ -38,7 +38,7 @@ subtitle: 关于JFinal与kisso集成使用心得,这篇文章原来是在csdn的
 ## 四、 kisso与jfianl整合
 
 	  先下载jar，附上POM
-	  
+
 
 ```xml
   <!--jfianl核心jar-->
@@ -317,10 +317,10 @@ public class IndexController extends Controller {
 ```
 这里使用了jfinal的注解表示拦截这个controller，在controller执行之前进行拦截。这里的拦截器就是我们前面写的拦截器。
 	完成以上步奏我们就可以打开浏览器验证了。
-	![images](https://gitee.com/oneww/onew_image/raw/master/jfinal_kisso_validation.png)
+	![BRPMTE](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/BRPMTE.jpg)
 	
 进行登陆。
-![images](https://gitee.com/oneww/onew_image/raw/master/jfinal_kisso_success.png)
+![MSDQVK](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/MSDQVK.jpg)
 登陆成功以后就出现了cookie，后面在访问就不需要登陆了！
 以上就完成了简单的整合
 

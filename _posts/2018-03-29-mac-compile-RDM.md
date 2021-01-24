@@ -36,11 +36,11 @@ subtitle: 虽然自己编译了,能支持官方还是支持一下的比较好.
 ## 第三步,开始编译
 - 打开qt-creator,导入RDM工程,构建配置选择release
 
-  ![images](https://gitee.com/oneww/onew_image/raw/master/mac_rdm_build.png)
+  ![Kc8Dmf](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/Kc8Dmf.jpg)
 
 - 修改rdm.pro,注释掉debug相关的参数,以及crashreporter相关的配置(如果不注释掉的需要编单独crashreporter这个依赖,为了避免麻烦就先注释掉了.如果需要的话,可以参考另一篇文章!)
 
-  ![images](https://gitee.com/oneww/onew_image/raw/master/mac_rdm_pro.png)
+  ![7BqNt9](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/7BqNt9.jpg)
 
 - 点击构建
 

@@ -277,7 +277,7 @@ protected EntityResolver getEntityResolver() {
 
 ​	以上代码通过多次判断,要么返回`ResourceEntityResolver`要么返回`DelegatingEntityResolver`.这两个解析器是个什么关系?
 
-​	![images](https://gitee.com/oneww/onew_image/raw/master/ResourceEntityResolver.png)	
+​	![BgKHbU](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/BgKHbU.jpg)	
 
 ​	可以看到 `ResourceEntityResolver`是继承`DelegatingEntityResolver`,而`DelegatingEntityResolver`实现了`EntityResolver`接口.
 
@@ -701,8 +701,8 @@ public class PluggableSchemaResolver implements EntityResolver {
 ​	`PluggableSchemaResolver`大体逻辑如下:
 
 	1. 先根据classpath路径下的` META-INF/spring.schemas`文件创建一个缓存`schemaMappings`
- 	2. 从`schemaMappings`获取指定`systemId`的xsd文件路径,如果未获取到返回null
- 	3. 根据xsd路径加载xsd文件返回 `InputSource` 对象
+	2. 从`schemaMappings`获取指定`systemId`的xsd文件路径,如果未获取到返回null
+	3. 根据xsd路径加载xsd文件返回 `InputSource` 对象
 
 
 
