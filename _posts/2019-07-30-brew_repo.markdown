@@ -1,0 +1,43 @@
+---
+title: brew换国内源,速度起飞
+date: 2019/07/30 17:39:12
+tags:
+- Mac
+categories: Mac
+cover: https://gitee.com/oneww/onew_image/raw/master/mac_vim_cover.png
+author: 
+  nick: onew
+  link: https://onew.me
+subtitle: brew下载缓慢,换源就好了
+---
+
+
+
+
+
+## 一、前言
+
+最近大面积封杀梯子,导致国内开发者用户,更新软件十分困难.比如说我,brew update 一下都要等很久.更别说通过brew更新软件了.
+
+
+
+## 二、换国内源
+
+- 替换为中科大源
+
+```
+# 替换brew.git：
+cd "$(brew --repo)"
+git remote set-url origin https://mirrors.ustc.edu.cn/brew.git
+
+# 替换homebrew-core.git:
+cd "$(brew --repo)/Library/Taps/homebrew/homebrew-core"
+git remote set-url origin https://mirrors.ustc.edu.cn/homebrew-core.git
+
+# 添加环境变量
+export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles
+```
+
+以上几步就搞定了,速度飞起.
+
+>以上步骤参考:https://www.jianshu.com/p/005963a4d843

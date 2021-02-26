@@ -1,0 +1,11 @@
+{
+    "applinks":{
+        "apps":[],
+        "details":[
+           {
+                "paths":["*"],
+                "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
+            }
+        ]
+    }
+}
