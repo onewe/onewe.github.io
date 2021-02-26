@@ -305,7 +305,7 @@
 
 <p>看看异常信息吧!</p>
 
-<p><img src="https://gitee.com/oneww/onew_image/raw/master/fastjson_springmvc_exception.png" alt="images" /></p>
+<p><img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/1CfMpX.jpg" alt="1CfMpX" /></p>
 
 <p>从异常的信息可以看出,在fastjson把对象转json字符串的时候遇到了问题,貌似从这个图片中看不出啥问题,该图片下面还有一段异常信息,如下:</p>
 
@@ -331,7 +331,7 @@ at org.springframework.aop.aspectj.AbstractAspectJAdvice.invokeAdviceMethodWithG
 
 <p>​		再看一下异常信息,按照打印的栈信息来看,是<code class="language-plaintext highlighter-rouge">RequestFacade</code>对象中的<code class="language-plaintext highlighter-rouge">getAsyncContext</code>方法被调用了,但是工程里面并没用用到<code class="language-plaintext highlighter-rouge">RequestFacade</code>对象呀,查看<code class="language-plaintext highlighter-rouge">RequestFacade</code>类的源码过后发现<code class="language-plaintext highlighter-rouge">RequestFacade</code>其实是<code class="language-plaintext highlighter-rouge">HttpServletRequest</code>的一个具体实现.那么问题就定位到了,fastjson把<code class="language-plaintext highlighter-rouge">HttpServletRequest</code>序列化了,只要把方法上的<code class="language-plaintext highlighter-rouge">HttpServletRequest</code> 参数去掉就可以了.</p>
 
-<p><img src="https://gitee.com/oneww/onew_image/raw/master/fastjson_springmvc_ok.png" alt="images" /></p>
+<p><img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/MZ7BAI.jpg" alt="MZ7BAI" /></p>
 
 <h1 id="四总结">四、总结</h1>
 

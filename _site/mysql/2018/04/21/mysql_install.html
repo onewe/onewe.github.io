@@ -314,19 +314,19 @@ SKIP LOCKED允许在操作中不锁定那些需要忽略的行；NOWAIT则在遇
 
 <ol>
   <li>打开官网https://www.mysql.com/downloads 选择MySQL Community Edition 版</li>
-  <li>选择操作系统,这里选择Redhat 7.x的全家桶版本<img src="https://gitee.com/oneww/onew_image/raw/master/mysql_dwonload.png" alt="images" /></li>
+  <li>选择操作系统,这里选择Redhat 7.x的全家桶版本!<img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/ulVdl6.jpg" alt="ulVdl6" /></li>
 </ol>
 
 <h2 id="三安装mysql">三、安装Mysql</h2>
 
 <ol>
   <li>
-    <p>上传安装包到服务器.  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_ls.png" alt="images" /></p>
+    <p>上传安装包到服务器.  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/xGifcX.jpg" alt="xGifcX" /></p>
   </li>
   <li>
-    <p>解压压缩包<code class="language-plaintext highlighter-rouge">mkdir mysql &amp;&amp; tar -xvf mysql-8.0.11-1.el7.x86_64.rpm-bundle.tar -C ./mysql</code>该命令会把压缩包解压到当前目录下的mysql目录下.  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_tar_xvf.png" alt="images" /></p>
+    <p>解压压缩包<code class="language-plaintext highlighter-rouge">mkdir mysql &amp;&amp; tar -xvf mysql-8.0.11-1.el7.x86_64.rpm-bundle.tar -C ./mysql</code>该命令会把压缩包解压到当前目录下的mysql目录下.  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/uyCC1b.jpg" alt="uyCC1b" /></p>
 
-    <p><img src="https://gitee.com/oneww/onew_image/raw/master/mysql_tar_ll.png" alt="images" /></p>
+    <p><img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/kB90jp.jpg" alt="kB90jp" /></p>
   </li>
   <li>
     <p>安装mysql</p>
@@ -353,21 +353,21 @@ SKIP LOCKED允许在操作中不锁定那些需要忽略的行；NOWAIT则在遇
         <p>启动服务<code class="language-plaintext highlighter-rouge">systemctl start mysqld</code></p>
       </li>
       <li>
-        <p>检查服务是否启动成功<code class="language-plaintext highlighter-rouge">systemc status mysqld.</code>  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_status.png" alt="images" /></p>
+        <p>检查服务是否启动成功<code class="language-plaintext highlighter-rouge">systemc status mysqld.</code>  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/JuJhW4.jpg" alt="JuJhW4" /></p>
       </li>
       <li>
-        <p>启动成功后,mysql会默认生成root密码,可以在启动日志中查看<code class="language-plaintext highlighter-rouge">cat /var/log/mysqld.log.</code>  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_password.png" alt="images" /></p>
+        <p>启动成功后,mysql会默认生成root密码,可以在启动日志中查看<code class="language-plaintext highlighter-rouge">cat /var/log/mysqld.log.</code>  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_password.png" alt="img" /></p>
       </li>
       <li>
-        <p>尝试登陆<code class="language-plaintext highlighter-rouge">mysql -uroot -p</code>输入刚才生成密码.  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_login.png" alt="images" /></p>
+        <p>尝试登陆<code class="language-plaintext highlighter-rouge">mysql -uroot -p</code>输入刚才生成密码.  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/FxqonP.jpg" alt="FxqonP" /></p>
       </li>
       <li>
-        <p>由于刚才生成的密码只是mysql的临时密码,所以需要重新设置root密码,不然操作mysql会出错误提示,并拒绝操作. <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_error.png" alt="images" /><code class="language-plaintext highlighter-rouge">ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement.</code>提示必须重置用户密码.</p>
+        <p>由于刚才生成的密码只是mysql的临时密码,所以需要重新设置root密码,不然操作mysql会出错误提示,并拒绝操作. <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/VMimrI.jpg" alt="VMimrI" /><code class="language-plaintext highlighter-rouge">ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement.</code>提示必须重置用户密码.</p>
       </li>
       <li>
         <p>重置密码</p>
 
-        <p><code class="language-plaintext highlighter-rouge">ALTER USER 'root'@'localhost' IDENTIFIED BY 'test110119';</code>使用这句语句来重置密码,但可能会收到一个安全策略引起的错误提示<code class="language-plaintext highlighter-rouge">Your password does not satisfy the current policy requirements</code>该错误的意思,密码太简单了.  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_week_password.png" alt="images" /></p>
+        <p><code class="language-plaintext highlighter-rouge">ALTER USER 'root'@'localhost' IDENTIFIED BY 'test110119';</code>使用这句语句来重置密码,但可能会收到一个安全策略引起的错误提示<code class="language-plaintext highlighter-rouge">Your password does not satisfy the current policy requirements</code>该错误的意思,密码太简单了.<img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/Ai3LWR.jpg" alt="Ai3LWR" />  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_week_password.png" alt="images" /></p>
 
         <p>密码设置复杂点就ok了.也可以修改安全策略(validate_password_policy),validate_password_policy有以下几个值可以参考.</p>
 
@@ -398,9 +398,7 @@ SKIP LOCKED允许在操作中不锁定那些需要忽略的行；NOWAIT则在遇
           </tbody>
         </table>
 
-        <p>validate_password_policy 默认值为1,如果要重置可以使用<code class="language-plaintext highlighter-rouge">set global validate_password_policy=0</code>,改为0,密码就只校验长度了.笔者这里不选择修改策略的方式,而是采用复杂的密码.  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_strong_password.png" alt="images" /></p>
-
-        <p>​</p>
+        <p>validate_password_policy 默认值为1,如果要重置可以使用<code class="language-plaintext highlighter-rouge">set global validate_password_policy=0</code>,改为0,密码就只校验长度了.笔者这里不选择修改策略的方式,而是采用复杂的密码.  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/u2adMY.jpg" alt="u2adMY" /></p>
       </li>
     </ol>
   </li>

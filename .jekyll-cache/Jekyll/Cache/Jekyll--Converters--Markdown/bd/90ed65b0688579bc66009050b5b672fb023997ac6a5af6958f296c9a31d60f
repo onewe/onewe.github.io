@@ -1,0 +1,104 @@
+I"}6<h1 id="一前言">一、前言</h1>
+
+<p>最近遇到一个需求根据word模板导出word文档,调研了一圈发现aspose比较好用,但缺点就是aspose需要收费.如果不付费就会出现水印.于是按照免费即是最好的,最好有破解的想法,尝试了一下如果绕过aspose的license验证.</p>
+
+<h1 id="二分析">二、分析</h1>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code> 				<span class="nc">License</span> <span class="n">aposeLic</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">License</span><span class="o">();</span>
+        <span class="nc">FileInputStream</span> <span class="n">stream</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">FileInputStream</span><span class="o">(</span><span class="s">"license.xml"</span><span class="o">);</span><span class="c1">//许可xml</span>
+        <span class="n">aposeLic</span><span class="o">.</span><span class="na">setLicense</span><span class="o">(</span><span class="n">stream</span><span class="o">);</span>
+        <span class="kt">boolean</span> <span class="n">licensed</span> <span class="o">=</span> <span class="n">aposeLic</span><span class="o">.</span><span class="na">isLicensed</span><span class="o">();</span>
+        <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">licensed</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>根据以上的代码就可以根据<code class="language-plaintext highlighter-rouge">aposeLic.setLicense(stream);</code>这句话追踪进去.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//反编译出</span>
+<span class="c1">//License.class</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">setLicense</span><span class="o">(</span><span class="nc">InputStream</span> <span class="n">stream</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">stream</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">NullPointerException</span><span class="o">(</span><span class="s">"stream"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="o">(</span><span class="k">new</span> <span class="n">zzZLD</span><span class="o">()).</span><span class="na">zzW</span><span class="o">(</span><span class="n">stream</span><span class="o">);</span>
+        <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="c1">//进入new zzZLD()).zzW(stream) 这个方法</span>
+<span class="c1">//反编译出</span>
+<span class="c1">//zzZLD.class final void zzW(InputStream var1)</span>
+<span class="kd">final</span> <span class="kt">void</span> <span class="nf">zzW</span><span class="o">(</span><span class="nc">InputStream</span> <span class="n">var1</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">Exception</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">var1</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">NullPointerException</span><span class="o">(</span><span class="s">"stream"</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+              <span class="o">.......</span>
+                <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                    <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">((</span><span class="k">new</span> <span class="nc">Date</span><span class="o">()).</span><span class="na">after</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">zzYPO</span><span class="o">))</span> <span class="o">{</span>
+                        <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"The license has expired."</span><span class="o">);</span>
+                    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                        <span class="k">this</span><span class="o">.</span><span class="na">zzYPN</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+                        <span class="n">zzYPM</span> <span class="o">=</span> <span class="k">this</span><span class="o">;</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">"This license is disabled, please contact Aspose to obtain a new license."</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+
+</code></pre></div></div>
+
+<p>可以从zzW方法中看出,有部分的验证逻辑在里面,如果最终通过验证会修改<code class="language-plaintext highlighter-rouge">zzYPN</code>和<code class="language-plaintext highlighter-rouge">zzYPM</code>这两个变量,先把这个几下,看看这两变量有啥用.</p>
+
+<p>在<code class="language-plaintext highlighter-rouge">zzZLD.class</code>中可以看到这两个变量在<code class="language-plaintext highlighter-rouge">zzZoR</code>方法和<code class="language-plaintext highlighter-rouge">zzZoQ</code>方法中参与运算.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//反编译出 </span>
+<span class="c1">//zzZLD.class</span>
+<span class="kd">static</span> <span class="kt">int</span> <span class="nf">zzZoR</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kt">boolean</span> <span class="n">var0</span> <span class="o">=</span> <span class="n">zzYPM</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">zzYPM</span><span class="o">.</span><span class="na">zzYPN</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="o">(</span><span class="k">new</span> <span class="nc">Date</span><span class="o">()).</span><span class="na">after</span><span class="o">(</span><span class="n">zzYPM</span><span class="o">.</span><span class="na">zzYPO</span><span class="o">)</span> <span class="o">||</span> <span class="n">zzYRK</span><span class="o">.</span><span class="na">zzYEL</span><span class="o">()</span> <span class="o">==</span> <span class="mi">4096</span><span class="o">;</span>
+        <span class="kt">boolean</span> <span class="n">var1</span> <span class="o">=</span> <span class="n">zzZGS</span><span class="o">.</span><span class="na">zzZg4</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">return</span> <span class="n">var0</span> <span class="o">&amp;&amp;</span> <span class="n">var1</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">static</span> <span class="kt">int</span> <span class="nf">zzZoQ</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kt">boolean</span> <span class="n">var0</span> <span class="o">=</span> <span class="n">zzYPM</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">zzYPM</span><span class="o">.</span><span class="na">zzYPN</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="o">(</span><span class="k">new</span> <span class="nc">Date</span><span class="o">()).</span><span class="na">after</span><span class="o">(</span><span class="n">zzYPM</span><span class="o">.</span><span class="na">zzYPO</span><span class="o">)</span> <span class="o">||</span> <span class="n">zzYRK</span><span class="o">.</span><span class="na">zzYEL</span><span class="o">()</span> <span class="o">==</span> <span class="mi">4096</span><span class="o">;</span>
+        <span class="kt">boolean</span> <span class="n">var1</span> <span class="o">=</span> <span class="n">zzZGS</span><span class="o">.</span><span class="na">zzZg4</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="k">return</span> <span class="n">var0</span> <span class="o">&amp;&amp;</span> <span class="n">var1</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>从以上两个方法返回值可以看出是验证license是否有效的方法.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//反编译出</span>
+<span class="c1">//License.class </span>
+<span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">isLicensed</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">zzZLD</span><span class="o">.</span><span class="na">zzZoQ</span><span class="o">()</span> <span class="o">==</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="o">}</span>
+</code></pre></div></div>
+
+<p>看到<code class="language-plaintext highlighter-rouge">isLicensed</code>这个方法我就更加确定了,但是这两个方法,看起来逻辑完全一模一样.emmmmmm.那么怎么破解呢?</p>
+
+<h1 id="三破解">三、破解</h1>
+
+<p>破解思路是利用<code class="language-plaintext highlighter-rouge">javassist</code>修改掉<code class="language-plaintext highlighter-rouge">zzZLD</code>类中的<code class="language-plaintext highlighter-rouge">zzW</code>方法的验证逻辑.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">CtClass</span> <span class="n">zzZLDClass</span> <span class="o">=</span> <span class="nc">ClassPool</span><span class="o">.</span><span class="na">getDefault</span><span class="o">().</span><span class="na">getCtClass</span><span class="o">(</span><span class="s">"com.aspose.words.zzZLD"</span><span class="o">);</span>
+<span class="nc">CtMethod</span> <span class="n">zzW</span> <span class="o">=</span> <span class="n">zzZLDClass</span><span class="o">.</span><span class="na">getDeclaredMethod</span><span class="o">(</span><span class="s">"zzW"</span><span class="o">);</span>
+<span class="n">zzW</span><span class="o">.</span><span class="na">setBody</span><span class="o">(</span><span class="s">"{this.zzYPO = new java.util.Date(Long.MAX_VALUE);this.zzYPN = 1;zzYPM = this;}"</span><span class="o">);</span>
+<span class="n">zzZLDClass</span><span class="o">.</span><span class="na">writeFile</span><span class="o">(</span><span class="s">"~/project/aspose"</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>这里设置<code class="language-plaintext highlighter-rouge">Date(Long.MAX_VALUE)</code>是有原因的,因为在<code class="language-plaintext highlighter-rouge">zzZoR</code>方法和<code class="language-plaintext highlighter-rouge">zzZoQ</code>方法中会进行一个after的一个判断,只要<code class="language-plaintext highlighter-rouge">var0</code>变量为false那么就会返回1,这样验证就通过了.</p>
+
+<p>emmmm,但是仅仅是这样还不够,因为在验证的条件中还有一个<code class="language-plaintext highlighter-rouge">zzYRK.zzYEL() == 4096</code>条件,如果不直接改<code class="language-plaintext highlighter-rouge">zzZoR</code>方法和<code class="language-plaintext highlighter-rouge">zzZoQ</code>方法的话就需要修改<code class="language-plaintext highlighter-rouge">zzYEL()</code>方法的返回值为256即可.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">CtClass</span> <span class="n">zzYRKClass</span> <span class="o">=</span> <span class="nc">ClassPool</span><span class="o">.</span><span class="na">getDefault</span><span class="o">().</span><span class="na">getCtClass</span><span class="o">(</span><span class="s">"com.aspose.words.zzYRK"</span><span class="o">);</span>
+<span class="nc">CtMethod</span> <span class="n">zzYELMethod</span> <span class="o">=</span> <span class="n">zzYRKClass</span><span class="o">.</span><span class="na">getDeclaredMethod</span><span class="o">(</span><span class="s">"zzYEL"</span><span class="o">);</span>
+<span class="n">zzYELMethod</span><span class="o">.</span><span class="na">setBody</span><span class="o">(</span><span class="s">"{return 256;}"</span><span class="o">);</span>
+<span class="n">zzYRKClass</span><span class="o">.</span><span class="na">writeFile</span><span class="o">(</span><span class="s">"~/project/aspose"</span><span class="o">);</span>
+</code></pre></div></div>
+
+<p>Ok.以上就搞定了,把修改好的class覆盖掉jar中的class就行了.</p>
+
+<p>对了,还要删除jar中的META-INF文件夹,因为aspose会进行一个文件指纹验证.</p>
+:ET

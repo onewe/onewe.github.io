@@ -301,26 +301,26 @@
   <li>
     <p>查看当前open files数量 <code class="language-plaintext highlighter-rouge">ulimit -a</code></p>
 
-    <p><img src="https://gitee.com/oneww/onew_image/raw/master/centos_limits_info.png" alt="images" /></p>
+    <p><img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/pT9JnZ.jpg" alt="pT9JnZ" /></p>
   </li>
   <li>
     <p>测试服务最高能到多少(当然这个数字并不是越大越好)</p>
 
-    <p><img src="https://gitee.com/oneww/onew_image/raw/master/centos_limits_max.png" alt="images" /></p>
+    <p><img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/j2bwuU.jpg" alt="j2bwuU" /></p>
 
     <p>图中可以看到最大值在1000000左右.<strong>一定不要试图超过这个值,不然ssh会连接不上服务器的,哪怕物理终端都会登陆不上去,切记!</strong></p>
   </li>
   <li>
     <p>修改配置使之永久生效.打开<code class="language-plaintext highlighter-rouge">vim /etc/security/limits.conf</code>,在文件末尾添加以下两行参数.</p>
 
-    <p><img src="https://gitee.com/oneww/onew_image/raw/master/centos_limits_edit.png" alt="images" /></p>
+    <p><img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/5Af97a.jpg" alt="5Af97a" /></p>
 
     <p>上述两行参数为,任何用户的文件数都设置为1000000,保存.重启.</p>
   </li>
   <li>
     <p>验证是否生效 <code class="language-plaintext highlighter-rouge">ulimit -n</code></p>
 
-    <p><img src="https://gitee.com/oneww/onew_image/raw/master/centos_limits_review.png" alt="images" /></p>
+    <p><img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/cc2qvr.jpg" alt="cc2qvr" /></p>
   </li>
 </ul>
 

@@ -1,0 +1,43 @@
+I"�<h1 id="一前言">一、前言</h1>
+
+<p>为了方便部署,不去倒腾开发环境,采用了docker的方式.在java这边就使用maven插件jib进行打包,虽然这样是方便很多,但使用的过程中也遇到各种的坑.</p>
+
+<h1 id="二起因">二、起因</h1>
+
+<p>在一次开发任务中,后端的时区有问题,比起北京时间少了8个小时.接到反馈,一般的思路是,先检查开发环境的时区, 看是否是UTC时区,检查过后发现,服务器时区正常,数据库时区正常.那么问题就定位到jdbc上,在开发机上测试,时区是正常的.那么问题又回到了服务器时区的问题,但检查了几遍都没发现时区的问题.于是问题定位到docker上.</p>
+
+<h1 id="三解决">三、解决</h1>
+
+<p>经过一番的试探,发现只要给jvm加上一个参数就可以完美解决,jib插件配置如下:</p>
+
+<div class="language-xml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   <span class="nt">&lt;plugin&gt;</span>
+     <span class="nt">&lt;groupId&gt;</span>com.google.cloud.tools<span class="nt">&lt;/groupId&gt;</span>
+     <span class="nt">&lt;artifactId&gt;</span>jib-maven-plugin<span class="nt">&lt;/artifactId&gt;</span>
+     <span class="nt">&lt;version&gt;</span>1.0.2<span class="nt">&lt;/version&gt;</span>
+     <span class="nt">&lt;configuration&gt;</span>
+       <span class="nt">&lt;container&gt;</span>
+         <span class="nt">&lt;jvmFlags&gt;</span>
+           <span class="nt">&lt;jvmFlag&gt;</span>-Xms512m<span class="nt">&lt;/jvmFlag&gt;</span>
+           <span class="nt">&lt;jvmFlag&gt;</span>-Xmx1024m<span class="nt">&lt;/jvmFlag&gt;</span>
+           <span class="nt">&lt;jvmFlag&gt;</span>-Djava.awt.headless=true<span class="nt">&lt;/jvmFlag&gt;</span>
+           <span class="nt">&lt;jvmFlag&gt;</span>-Duser.timezone=PRC<span class="nt">&lt;/jvmFlag&gt;</span>  <span class="c">&lt;!-- 这里就是重点了 --&gt;</span>
+         <span class="nt">&lt;/jvmFlags&gt;</span>
+         <span class="nt">&lt;ports&gt;</span>
+           <span class="nt">&lt;port&gt;</span>8080<span class="nt">&lt;/port&gt;</span>
+         <span class="nt">&lt;/ports&gt;</span>
+         <span class="nt">&lt;useCurrentTimestamp&gt;</span>true<span class="nt">&lt;/useCurrentTimestamp&gt;</span>
+         <span class="nt">&lt;mainClass&gt;</span>com.b1809.base.Application<span class="nt">&lt;/mainClass&gt;</span>
+       <span class="nt">&lt;/container&gt;</span>
+       <span class="nt">&lt;from&gt;</span>
+         <span class="nt">&lt;image&gt;</span>openjdk:8u181-jdk-stretch<span class="nt">&lt;/image&gt;</span>
+       <span class="nt">&lt;/from&gt;</span>
+       <span class="nt">&lt;to&gt;</span>
+         <span class="nt">&lt;image&gt;</span>b1809:b-dev<span class="nt">&lt;/image&gt;</span>
+       <span class="nt">&lt;/to&gt;</span>
+       <span class="nt">&lt;allowInsecureRegistries&gt;</span>true<span class="nt">&lt;/allowInsecureRegistries&gt;</span>
+       <span class="nt">&lt;extraDirectory&gt;</span>${project.basedir}/src/main/jib<span class="nt">&lt;/extraDirectory&gt;</span>
+     <span class="nt">&lt;/configuration&gt;</span>
+<span class="nt">&lt;/plugin&gt;</span>
+</code></pre></div></div>
+
+:ET

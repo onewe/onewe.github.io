@@ -1,0 +1,129 @@
+I"�)<h1 id="列表">列表</h1>
+<blockquote>
+  <p>emmmmm列表吧,跟java中的list是差不多的,只不过python中的列表写法更简洁,下面记录一下学习的笔记</p>
+</blockquote>
+
+<p>代码</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#创建一个列表
+</span><span class="n">name</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">]</span>
+<span class="c1">#取小标为1的元素
+</span><span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="c1">#从下标1开始取到下标为3(不包括3)
+</span><span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+<span class="c1">#从下标1开始取到最后一个,不包括最后一个
+</span><span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="c1">#从下标1开始取到最后一个,包括最后一个
+</span><span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+<span class="c1">#删除下标为1的元素
+</span><span class="k">del</span> <span class="n">name</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="c1">#追加元素到末尾
+</span><span class="n">name</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="c1">#统计列表中元素的个数
+</span><span class="n">name</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">count</span> <span class="o">=</span> <span class="n">name</span><span class="p">.</span><span class="n">count</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+<span class="c1">#把一个列表合并到另外一个列表中
+</span><span class="n">name</span><span class="p">.</span><span class="n">extend</span><span class="p">([</span><span class="mi">99</span><span class="p">,</span><span class="mi">88</span><span class="p">])</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="c1">#在列表中查找元素为3的索引
+</span><span class="n">index</span> <span class="o">=</span> <span class="n">name</span><span class="p">.</span><span class="n">index</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+<span class="c1">#在指定列表范围(索引4到最后)中查找元素为3的索引
+</span><span class="n">index1</span> <span class="o">=</span> <span class="n">name</span><span class="p">.</span><span class="n">index</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">index1</span><span class="p">)</span>
+<span class="c1">#反转列表
+</span><span class="n">name</span><span class="p">.</span><span class="n">reverse</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="c1">#排序,默认自然排序
+</span><span class="n">name</span><span class="p">.</span><span class="n">sort</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="c1">#copy一份列表
+</span><span class="n">name_copy</span> <span class="o">=</span> <span class="n">name</span><span class="p">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name_copy</span><span class="p">)</span>
+<span class="c1">#指定位置插入指定的元素
+</span><span class="n">name</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">76</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name_copy</span><span class="p">)</span>
+<span class="c1">#取出一个元素并从列表中弹出
+</span><span class="n">pop</span> <span class="o">=</span> <span class="n">name</span><span class="p">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">pop</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="n">pop_end</span> <span class="o">=</span> <span class="n">name</span><span class="p">.</span><span class="n">pop</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">pop_end</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="c1">#移除指定元素
+</span><span class="n">name</span><span class="p">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">88</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+<span class="c1">#清空列表
+</span><span class="n">name</span><span class="p">.</span><span class="n">clear</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+<p>运行结果</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>2  
+[2, 3]
+[2, 3, 4, 5, 6]
+[2, 3, 4, 5, 6, 7]
+[1, 3, 4, 5, 6, 7]
+[1, 3, 4, 5, 6, 7, 8]
+2
+[1, 3, 4, 5, 6, 7, 8, 3, 99, 88]
+1
+7
+[88, 99, 3, 8, 7, 6, 5, 4, 3, 1]
+[1, 3, 3, 4, 5, 6, 7, 8, 88, 99]
+[1, 3, 3, 4, 5, 6, 7, 8, 88, 99]
+[1, 3, 76, 3, 4, 5, 6, 7, 8, 88, 99]
+[1, 3, 3, 4, 5, 6, 7, 8, 88, 99]
+76
+[1, 3, 3, 4, 5, 6, 7, 8, 88, 99]
+99
+[1, 3, 3, 4, 5, 6, 7, 8, 88]
+[1, 3, 3, 4, 5, 6, 7, 8]
+[]
+
+</code></pre></div></div>
+
+<ul>
+  <li>创建列表也可以这样写<code class="language-plaintext highlighter-rouge">name = list([1,2,3,4,5,6])</code>,毕竟他们的api都是一样的</li>
+</ul>
+
+<hr />
+
+<p>迭代列表</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">name</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+<span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+
+<span class="k">print</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">**********直接迭代**********</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s">","</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">**********下标迭代**********</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">name</span><span class="p">.</span><span class="n">__len__</span><span class="p">()):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="s">","</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">**********下标与值一起迭代*****</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">'index:%s,value:%s'</span><span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">v</span><span class="p">))</span>
+
+
+</code></pre></div></div>
+
+<p>运行结果</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[1, 0, 3, 4, 5, 6]
+**********直接迭代**********
+1,0,3,4,5,6,
+**********下标迭代**********
+1,0,3,4,5,6,
+**********下标与值一起迭代*****
+index:0,value:1
+index:1,value:0
+index:2,value:3
+index:3,value:4
+index:4,value:5
+index:5,value:6
+
+</code></pre></div></div>
+:ET

@@ -1,0 +1,189 @@
+I"�m<h1 id="一前言">一、前言</h1>
+
+<p>由于公司要求需要提供一个人脸检测的桌面软件打包出去用,目前虹软在这块儿算是做的比较的好的,并且人脸识别也是免费,于是首当其冲的选择了虹软的产品.没相当用javaFX打包之后遇到了各种坑,心累呀.</p>
+
+<h1 id="二踩坑锦集">二、踩坑锦集</h1>
+
+<ol>
+  <li>
+    <p>多线程使用虹软库的时候,必须每个线程一个虹软的引擎,不然会报错.如果想使用线程池,首先继承thread,在对象中封装虹软的引擎对象(这里java使用的是JNA),然后创建线程池的时候,new的thread对象一定是自己创建的那个对象,这样就保证了一个线程一个虹软的对象.详情看一下代码:</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   
+<span class="cm">/**
+封装FD
+*/</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Detection</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">FD_WORK_BUF_SIZE</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="o">;</span><span class="c1">// 20 MB</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">nScale</span> <span class="o">=</span> <span class="mi">16</span><span class="o">;</span> <span class="c1">// 有效值范围[2,50]</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="no">MAX_FACE_NUM</span> <span class="o">=</span> <span class="mi">16</span><span class="o">;</span> <span class="c1">// 有效值范围[1,50]</span>
+    <span class="kd">private</span> <span class="nc">Pointer</span> <span class="n">hFDEngine</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="nc">Pointer</span> <span class="n">pFDWorkMem</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">doing</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+	<span class="c1">//在构造方法中,初始化虹软引擎</span>
+    <span class="kd">public</span> <span class="nf">Detection</span><span class="o">(){</span>
+        <span class="nc">String</span> <span class="no">APPID</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="nc">String</span> <span class="no">FD_SDKKEY</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="k">if</span><span class="o">(</span><span class="nc">OSUtils</span><span class="o">.</span><span class="na">getCurrentOSType</span><span class="o">()</span> <span class="o">==</span> <span class="nc">OSUtils</span><span class="o">.</span><span class="na">OSType</span><span class="o">.</span><span class="na">Windows</span><span class="o">){</span>
+            <span class="no">APPID</span> <span class="o">=</span> <span class="nc">ArcFace</span><span class="o">.</span><span class="na">appid_Windows_x64</span><span class="o">;</span>
+            <span class="no">FD_SDKKEY</span> <span class="o">=</span> <span class="nc">ArcFace</span><span class="o">.</span><span class="na">sdkkey_FD_Windows_x64</span><span class="o">;</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="nc">OSUtils</span><span class="o">.</span><span class="na">getCurrentOSType</span><span class="o">()</span> <span class="o">==</span> <span class="nc">OSUtils</span><span class="o">.</span><span class="na">OSType</span><span class="o">.</span><span class="na">Linux</span><span class="o">){</span>
+            <span class="no">APPID</span> <span class="o">=</span> <span class="nc">ArcFace</span><span class="o">.</span><span class="na">appid_Linux_x64</span><span class="o">;</span>
+            <span class="no">FD_SDKKEY</span> <span class="o">=</span> <span class="nc">ArcFace</span><span class="o">.</span><span class="na">sdkkey_FD_Linux_x64</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="n">pFDWorkMem</span> <span class="o">=</span> <span class="nc">CLibrary</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">malloc</span><span class="o">(</span><span class="no">FD_WORK_BUF_SIZE</span><span class="o">);</span>
+        <span class="nc">PointerByReference</span> <span class="n">phFDEngine</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PointerByReference</span><span class="o">();</span>
+        <span class="nc">NativeLong</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">AFD_FSDKEngine</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">AFD_FSDK_InitialFaceEngine</span><span class="o">(</span>
+                <span class="no">APPID</span><span class="o">,</span>
+                <span class="no">FD_SDKKEY</span><span class="o">,</span>
+                <span class="n">pFDWorkMem</span><span class="o">,</span>
+                <span class="no">FD_WORK_BUF_SIZE</span><span class="o">,</span>
+                <span class="n">phFDEngine</span><span class="o">,</span>
+                <span class="n">FSDK_OrientPriority</span><span class="o">.</span><span class="na">FSDK_OPF_0_HIGHER_EXT</span><span class="o">,</span>
+                <span class="n">nScale</span><span class="o">,</span>
+                <span class="no">MAX_FACE_NUM</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">ret</span><span class="o">.</span><span class="na">longValue</span><span class="o">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">CLibrary</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">free</span><span class="o">(</span><span class="n">pFDWorkMem</span><span class="o">);</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">err</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">"AFD_FSDK_InitialFaceEngine ret 0x%x %s"</span><span class="o">,</span> <span class="n">ret</span><span class="o">.</span><span class="na">longValue</span><span class="o">(),</span> <span class="nc">Error</span><span class="o">.</span><span class="na">getErrorMsg</span><span class="o">(</span><span class="n">ret</span><span class="o">.</span><span class="na">longValue</span><span class="o">())));</span>
+        <span class="o">}</span>
+        <span class="n">hFDEngine</span> <span class="o">=</span> <span class="n">phFDEngine</span><span class="o">.</span><span class="na">getValue</span><span class="o">();</span>
+    <span class="o">}</span>
+   
+    <span class="kd">public</span> <span class="nc">FaceInfo</span><span class="o">[]</span> <span class="nf">faceDetection</span><span class="o">(</span><span class="no">ASVLOFFSCREEN</span> <span class="n">inputImg</span><span class="o">)</span> <span class="o">{</span>
+        <span class="nc">FaceInfo</span><span class="o">[]</span> <span class="n">faceInfo</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">FaceInfo</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
+        <span class="nc">PointerByReference</span> <span class="n">ppFaceRes</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">PointerByReference</span><span class="o">();</span>
+        <span class="n">doing</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="nc">NativeLong</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">AFD_FSDKEngine</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">AFD_FSDK_StillImageFaceDetection</span><span class="o">(</span>
+                <span class="n">hFDEngine</span><span class="o">,</span>
+                <span class="n">inputImg</span><span class="o">,</span>
+                <span class="n">ppFaceRes</span><span class="o">);</span>
+        <span class="n">doing</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">ret</span><span class="o">.</span><span class="na">longValue</span><span class="o">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="s">"AFD_FSDK_StillImageFaceDetection ret 0x%x %s"</span><span class="o">,</span> <span class="n">ret</span><span class="o">.</span><span class="na">longValue</span><span class="o">(),</span> <span class="nc">Error</span><span class="o">.</span><span class="na">getErrorMsg</span><span class="o">(</span><span class="n">ret</span><span class="o">.</span><span class="na">longValue</span><span class="o">())));</span>
+            <span class="k">return</span> <span class="n">faceInfo</span><span class="o">;</span>
+        <span class="o">}</span>
+   
+        <span class="no">AFD_FSDK_FACERES</span> <span class="n">faceRes</span> <span class="o">=</span> <span class="k">new</span> <span class="no">AFD_FSDK_FACERES</span><span class="o">(</span><span class="n">ppFaceRes</span><span class="o">.</span><span class="na">getValue</span><span class="o">());</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">faceRes</span><span class="o">.</span><span class="na">nFace</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">faceInfo</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">FaceInfo</span><span class="o">[</span><span class="n">faceRes</span><span class="o">.</span><span class="na">nFace</span><span class="o">];</span>
+            <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">faceRes</span><span class="o">.</span><span class="na">nFace</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+                <span class="no">MRECT</span> <span class="n">rect</span> <span class="o">=</span> <span class="k">new</span> <span class="no">MRECT</span><span class="o">(</span><span class="k">new</span> <span class="nc">Pointer</span><span class="o">(</span><span class="nc">Pointer</span><span class="o">.</span><span class="na">nativeValue</span><span class="o">(</span><span class="n">faceRes</span><span class="o">.</span><span class="na">rcFace</span><span class="o">.</span><span class="na">getPointer</span><span class="o">())</span> <span class="o">+</span> <span class="n">faceRes</span><span class="o">.</span><span class="na">rcFace</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">*</span> <span class="n">i</span><span class="o">));</span>
+                <span class="kt">int</span> <span class="n">orient</span> <span class="o">=</span> <span class="n">faceRes</span><span class="o">.</span><span class="na">lfaceOrient</span><span class="o">.</span><span class="na">getPointer</span><span class="o">().</span><span class="na">getInt</span><span class="o">(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">4</span><span class="o">);</span>
+                <span class="n">faceInfo</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">FaceInfo</span><span class="o">();</span>
+                <span class="n">faceInfo</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">left</span> <span class="o">=</span> <span class="n">rect</span><span class="o">.</span><span class="na">left</span><span class="o">;</span>
+                <span class="n">faceInfo</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">top</span> <span class="o">=</span> <span class="n">rect</span><span class="o">.</span><span class="na">top</span><span class="o">;</span>
+                <span class="n">faceInfo</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">right</span> <span class="o">=</span> <span class="n">rect</span><span class="o">.</span><span class="na">right</span><span class="o">;</span>
+                <span class="n">faceInfo</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">bottom</span> <span class="o">=</span> <span class="n">rect</span><span class="o">.</span><span class="na">bottom</span><span class="o">;</span>
+                <span class="n">faceInfo</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">orient</span> <span class="o">=</span> <span class="n">orient</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">faceInfo</span><span class="o">;</span>
+    <span class="o">}</span>
+   
+    <span class="kd">public</span> <span class="nc">FaceInfo</span><span class="o">[]</span> <span class="nf">faceDetection</span><span class="o">(</span><span class="nc">BufferedImage</span> <span class="n">img</span><span class="o">){</span>
+        <span class="k">return</span> <span class="nf">faceDetection</span><span class="o">(</span><span class="nc">ArcFaceUtil</span><span class="o">.</span><span class="na">getASVLOFFSCREEN</span><span class="o">(</span><span class="n">img</span><span class="o">));</span>
+    <span class="o">}</span>
+   
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">close</span><span class="o">(){</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="k">while</span> <span class="o">(</span><span class="n">doing</span><span class="o">){</span>
+                <span class="nc">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">200</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="n">AFD_FSDKEngine</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">AFD_FSDK_UninitialFaceEngine</span><span class="o">(</span><span class="n">hFDEngine</span><span class="o">);</span>
+            <span class="nc">CLibrary</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">.</span><span class="na">free</span><span class="o">(</span><span class="n">pFDWorkMem</span><span class="o">);</span>
+        <span class="o">}</span><span class="k">catch</span> <span class="o">(</span><span class="nc">Exception</span> <span class="n">e</span><span class="o">){</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+   
+   
+<span class="c1">//继承线程对象</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">FaceThread</span> <span class="kd">extends</span> <span class="nc">Thread</span> <span class="o">{</span>
+   
+   
+    <span class="kd">private</span> <span class="kd">final</span> <span class="nc">Detection</span> <span class="n">detection</span><span class="o">;</span>
+     
+    <span class="kd">public</span> <span class="nf">FaceThread</span><span class="o">(</span><span class="nc">Runnable</span> <span class="n">runnable</span><span class="o">){</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">runnable</span><span class="o">);</span>
+        <span class="n">detection</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Detection</span><span class="o">();</span>
+    <span class="o">}</span>
+   
+   
+   
+    <span class="kd">public</span> <span class="nc">Detection</span> <span class="nf">getDetection</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">detection</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+   
+<span class="c1">//创建线程池</span>
+ <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">ListeningExecutorService</span> <span class="no">FACE_THREAD_POOL</span> <span class="o">=</span> <span class="nc">MoreExecutors</span><span class="o">.</span><span class="na">listeningDecorator</span><span class="o">(</span><span class="nc">Executors</span><span class="o">.</span><span class="na">newFixedThreadPool</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span><span class="k">new</span> <span class="nc">ThreadFactoryBuilder</span><span class="o">().</span><span class="na">setThreadFactory</span><span class="o">(</span><span class="nl">FaceThread:</span><span class="o">:</span><span class="k">new</span><span class="o">).</span><span class="na">setNameFormat</span><span class="o">(</span><span class="s">"face-%d-Thread"</span><span class="o">).</span><span class="na">setUncaughtExceptionHandler</span><span class="o">((</span><span class="n">t</span><span class="o">,</span> <span class="n">e</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">err</span><span class="o">)).</span><span class="na">setDaemon</span><span class="o">(</span><span class="kc">true</span><span class="o">).</span><span class="na">build</span><span class="o">()));</span>
+</code></pre></div>    </div>
+
+    <p>使用的时候,只需要拿到当前线程对象,就可以了,因为当前线程对象里面有虹软的识别引擎对象.</p>
+  </li>
+  <li>
+    <p>某些电脑加载不了虹软的dll文件</p>
+
+    <p>这个首先排查自己代码中的dll路径有没有错,如果没有错,就看库的版本与jvm的版本是否一致,必须两个都为32或者64才能跑.妈的如果这时候版本也是一致的,就看电脑上是否安装了<a href="https://www.microsoft.com/zh-CN/download/details.aspx?id=40784">vc++ 2013</a>的运行库,如果没有就下载一个进行安装.如果还是没办法,问官方吧.</p>
+  </li>
+  <li>
+    <p>打包成jar加载不了dll文件</p>
+
+    <p>这个的确是个问题,对于一个有强迫症的人来说.因为dll文件被打包进jar中了,所以dll就不存在文件系统中了,这个时候需要从jar中释放出dll文件来,在进行加载dll.代码如下:</p>
+
+    <div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * @author
+ * */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoadUtils</span> <span class="o">{</span>
+	<span class="kd">public</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="no">T</span> <span class="nf">loadOSLibrary</span><span class="o">(</span><span class="nc">String</span> <span class="n">libName</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">interfaceClass</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="nc">String</span> <span class="n">filePath</span> <span class="o">=</span> <span class="s">""</span><span class="o">;</span>
+            <span class="no">URI</span> <span class="n">uri</span> <span class="o">=</span> <span class="nc">LoadUtils</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getProtectionDomain</span><span class="o">().</span><span class="na">getCodeSource</span><span class="o">().</span><span class="na">getLocation</span><span class="o">().</span><span class="na">toURI</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="nc">Platform</span><span class="o">.</span><span class="na">isWindows</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">filePath</span> <span class="o">=</span> <span class="s">"arcsoft/windows_x64/"</span> <span class="o">+</span> <span class="n">libName</span> <span class="o">+</span> <span class="s">".dll"</span><span class="o">;</span>
+                <span class="n">uri</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">resolve</span><span class="o">(</span><span class="n">filePath</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="nc">Platform</span><span class="o">.</span><span class="na">isLinux</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">filePath</span> <span class="o">=</span> <span class="s">"arcsoft/linux_x64/"</span> <span class="o">+</span> <span class="n">libName</span> <span class="o">+</span> <span class="s">".so"</span><span class="o">;</span>
+                <span class="n">uri</span> <span class="o">=</span> <span class="n">uri</span><span class="o">.</span><span class="na">resolve</span><span class="o">(</span><span class="n">filePath</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"unsupported platform"</span><span class="o">);</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">exit</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="nc">Path</span> <span class="n">path</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">uri</span><span class="o">);</span>
+            <span class="c1">//尝试释放资源</span>
+            <span class="k">if</span><span class="o">(!</span><span class="nc">Files</span><span class="o">.</span><span class="na">exists</span><span class="o">(</span><span class="n">path</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">filePath</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">){</span>
+                <span class="nc">Path</span> <span class="n">parent</span> <span class="o">=</span> <span class="nc">Paths</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">uri</span><span class="o">.</span><span class="na">resolve</span><span class="o">(</span><span class="s">"./"</span><span class="o">));</span>
+                <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">parent</span><span class="o">);</span>
+                <span class="c1">//父目录不存在,创建目录</span>
+                <span class="k">if</span><span class="o">(!</span><span class="nc">Files</span><span class="o">.</span><span class="na">exists</span><span class="o">(</span><span class="n">parent</span><span class="o">)){</span>
+                    <span class="nc">Files</span><span class="o">.</span><span class="na">createDirectories</span><span class="o">(</span><span class="n">parent</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="nc">Files</span><span class="o">.</span><span class="na">copy</span><span class="o">(</span><span class="nc">LoadUtils</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getResourceAsStream</span><span class="o">(</span><span class="s">"/"</span> <span class="o">+</span> <span class="n">filePath</span><span class="o">),</span><span class="n">path</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">path</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+            <span class="k">return</span> <span class="nf">loadLibrary</span><span class="o">(</span><span class="n">path</span><span class="o">.</span><span class="na">toString</span><span class="o">(),</span> <span class="n">interfaceClass</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">URISyntaxException</span> <span class="o">|</span> <span class="nc">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span>
+   
+        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+	<span class="o">}</span>
+   
+	<span class="kd">private</span> <span class="kd">static</span> <span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="no">T</span> <span class="nf">loadLibrary</span><span class="o">(</span><span class="nc">String</span> <span class="n">filePath</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;</span><span class="no">T</span><span class="o">&gt;</span> <span class="n">interfaceClass</span><span class="o">)</span> <span class="o">{</span>
+		<span class="k">return</span> <span class="nc">Native</span><span class="o">.</span><span class="na">loadLibrary</span><span class="o">(</span><span class="n">filePath</span><span class="o">,</span> <span class="n">interfaceClass</span><span class="o">);</span>
+	<span class="o">}</span>
+   
+<span class="o">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>使用虹软的ft(libarcsoft_fsdk_face_tracking.dll)和fd(libarcsoft_fsdk_face_detection.dll)的效果是不一样的.</p>
+
+    <p>最开始使用的ft进行的人脸检测,发现有时候能检测出人脸而有时候却检测不出人脸,坑啊.最后换了fd之后这种情况就没了.</p>
+  </li>
+</ol>
+
+<h1 id="三总结">三、总结</h1>
+
+<p>项目不止,踩坑不断,后面踩到新坑,会补充上来.心累……</p>
+:ET

@@ -1,0 +1,4 @@
+I" <h1 id="一坑">一、坑</h1>
+
+<p>redis安装还是挺简单的,按照官方的教程一步一步的来,基本上来说是没什么问题.至于后台运行,只需要在redis的配置文件中设置<code class="language-plaintext highlighter-rouge">daemonize yes</code>即可,但是</p>
+:ET

@@ -1,0 +1,125 @@
+I"�"<h1 id="尝鲜-mysql-80的初体验">尝鲜 Mysql 8.0的初体验</h1>
+
+<h2 id="一mysql-8x的新特性">一、Mysql 8.x的新特性</h2>
+
+<p>近期mysql更新了一个新版本8.x,主要更新了哪些特性呢?</p>
+
+<ul>
+  <li>对Unicode 9.0的开箱即用的完整支持</li>
+  <li>支持窗口函数和递归SQL语法，这在以往是不可能或者很难才能编写这样的查询语句</li>
+  <li>对原生JSON数据和文档存储功能的增强支持MySQL 8.0的发布.由于6.0修改和7.0是用来保留做MySQL的集群版本，因此采用了8.0的版本号。</li>
+  <li>在锁定行方面增加了更多选项，如SKIP LOCKED和NOWAIT两个选项。其中，
+SKIP LOCKED允许在操作中不锁定那些需要忽略的行；NOWAIT则在遇到行的锁定的时候马上抛出错误。</li>
+  <li>MySQL能根据可用内存的总量去伸缩扩展，以更好利用虚拟机的部署。</li>
+  <li>新增“隐藏索引”的特性，这样索引可以在查询优化器中变为不可见。索引在标记为不可用后，和表的数据更改同步，但是优化器不会使用它们。对于使用隐藏索引的建议，是当不决定某个索引是否需要保留的时候，可以使用。</li>
+</ul>
+
+<h2 id="二下载mysql-8x">二、下载Mysql 8.x</h2>
+
+<ol>
+  <li>打开官网https://www.mysql.com/downloads 选择MySQL Community Edition 版</li>
+  <li>选择操作系统,这里选择Redhat 7.x的全家桶版本!<img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/ulVdl6.jpg" alt="ulVdl6" /></li>
+</ol>
+
+<h2 id="三安装mysql">三、安装Mysql</h2>
+
+<ol>
+  <li>
+    <p>上传安装包到服务器.  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/xGifcX.jpg" alt="xGifcX" /></p>
+  </li>
+  <li>
+    <p>解压压缩包<code class="language-plaintext highlighter-rouge">mkdir mysql &amp;&amp; tar -xvf mysql-8.0.11-1.el7.x86_64.rpm-bundle.tar -C ./mysql</code>该命令会把压缩包解压到当前目录下的mysql目录下.  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/uyCC1b.jpg" alt="uyCC1b" /></p>
+
+    <p><img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/kB90jp.jpg" alt="kB90jp" /></p>
+  </li>
+  <li>
+    <p>安装mysql</p>
+
+    <ol>
+      <li>为了保险起见先关闭防火墙<code class="language-plaintext highlighter-rouge">systemctl stop firewalld</code></li>
+      <li>关闭SE linux<code class="language-plaintext highlighter-rouge">setenforce 0</code></li>
+      <li>卸载mariadb-libs<code class="language-plaintext highlighter-rouge">yum remove mariadb* -y &amp;&amp; yum clean all</code></li>
+      <li>安装openssl <code class="language-plaintext highlighter-rouge">yum install openssl-*</code></li>
+      <li>安装net-tools <code class="language-plaintext highlighter-rouge">yum install net-tools</code></li>
+      <li>安装common模块<code class="language-plaintext highlighter-rouge">rpm -ivh mysql-community-common-8.0.11-1.el7.x86_64.rpm</code></li>
+      <li>安装libs模块<code class="language-plaintext highlighter-rouge">rpm -ivh mysql-community-libs-8.0.11-1.el7.x86_64.rpm</code></li>
+      <li>安装libs-compat模块 <code class="language-plaintext highlighter-rouge">rpm -ivh mysql-community-libs-compat-8.0.11-1.el7.x86_64.rpm</code></li>
+      <li>安装devel 模块<code class="language-plaintext highlighter-rouge">rpm -ivh mysql-community-devel-8.0.11-1.el7.x86_64.rpm</code></li>
+      <li>安装client模块<code class="language-plaintext highlighter-rouge">rpm -ivh mysql-community-client-8.0.11-1.el7.x86_64.rpm</code></li>
+      <li>安装server模块 <code class="language-plaintext highlighter-rouge">rpm -ivh mysql-community-server-8.0.11-1.el7.x86_64.rpm</code></li>
+    </ol>
+  </li>
+  <li>
+    <p>启动mysql服务</p>
+
+    <ol>
+      <li>
+        <p>启动服务<code class="language-plaintext highlighter-rouge">systemctl start mysqld</code></p>
+      </li>
+      <li>
+        <p>检查服务是否启动成功<code class="language-plaintext highlighter-rouge">systemc status mysqld.</code>  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/JuJhW4.jpg" alt="JuJhW4" /></p>
+      </li>
+      <li>
+        <p>启动成功后,mysql会默认生成root密码,可以在启动日志中查看<code class="language-plaintext highlighter-rouge">cat /var/log/mysqld.log.</code>  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_password.png" alt="img" /></p>
+      </li>
+      <li>
+        <p>尝试登陆<code class="language-plaintext highlighter-rouge">mysql -uroot -p</code>输入刚才生成密码.  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/FxqonP.jpg" alt="FxqonP" /></p>
+      </li>
+      <li>
+        <p>由于刚才生成的密码只是mysql的临时密码,所以需要重新设置root密码,不然操作mysql会出错误提示,并拒绝操作. <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/VMimrI.jpg" alt="VMimrI" /><code class="language-plaintext highlighter-rouge">ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement.</code>提示必须重置用户密码.</p>
+      </li>
+      <li>
+        <p>重置密码</p>
+
+        <p><code class="language-plaintext highlighter-rouge">ALTER USER 'root'@'localhost' IDENTIFIED BY 'test110119';</code>使用这句语句来重置密码,但可能会收到一个安全策略引起的错误提示<code class="language-plaintext highlighter-rouge">Your password does not satisfy the current policy requirements</code>该错误的意思,密码太简单了.<img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/Ai3LWR.jpg" alt="Ai3LWR" />  <img src="https://gitee.com/oneww/onew_image/raw/master/mysql_week_password.png" alt="images" /></p>
+
+        <p>密码设置复杂点就ok了.也可以修改安全策略(validate_password_policy),validate_password_policy有以下几个值可以参考.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Policy</th>
+              <th>Tests Performed</th>
+              <th>comment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code class="language-plaintext highlighter-rouge">0</code> or <code class="language-plaintext highlighter-rouge">LOW</code></td>
+              <td>Length</td>
+              <td>必须符合长度</td>
+            </tr>
+            <tr>
+              <td><code class="language-plaintext highlighter-rouge">1</code> or <code class="language-plaintext highlighter-rouge">MEDIUM</code></td>
+              <td>Length; numeric, lowercase/uppercase, and special characters</td>
+              <td>必须符合长度,包含数字,大小写,特殊字符</td>
+            </tr>
+            <tr>
+              <td><code class="language-plaintext highlighter-rouge">1</code> or <code class="language-plaintext highlighter-rouge">MEDIUM</code></td>
+              <td>Length; numeric, lowercase/uppercase, and special characters; dictionary file</td>
+              <td>必须符合长度,包含数字,大小写,特殊字符,字典文件</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>validate_password_policy 默认值为1,如果要重置可以使用<code class="language-plaintext highlighter-rouge">set global validate_password_policy=0</code>,改为0,密码就只校验长度了.笔者这里不选择修改策略的方式,而是采用复杂的密码.  <img src="https://itinfo.oss-cn-hongkong.aliyuncs.com/img/u2adMY.jpg" alt="u2adMY" /></p>
+      </li>
+    </ol>
+  </li>
+</ol>
+
+<h2 id="四远程登录">四、远程登录</h2>
+
+<p>安装好mysql之后发现能够在本地登录,不能远程登录.这是因为mysql限制了root用户的远程登录的权限,稍作修改就好.远程访问一般有两种方法,一种是改表法,另外一种是授权法.改表法,比较简单,只要把mysql中的user表root用户的host改为%就ok了</p>
+
+<ol>
+  <li>切换数据库<code class="language-plaintext highlighter-rouge">use mysql;</code></li>
+  <li>修改user表<code class="language-plaintext highlighter-rouge">update user set host = '%' where user='root';</code></li>
+  <li>重启mysql<code class="language-plaintext highlighter-rouge">systemctl restart mysqld</code></li>
+  <li>Ok 搞定</li>
+</ol>
+
+<h1 id="总结">总结</h1>
+
+<p>linux安装mysql的时候,依赖比较复杂安装的时候一定要注意.如果使用客户端连接不上并提示<code class="language-plaintext highlighter-rouge">Authentication plugin 'caching_sha2_password' cannot be loaded: dlopen(/usr/local/mysql/lib/plugin/caching_sha2_password.so, 2): image not found </code>的话,重新修改密码的加密方式就可以,或者客户端支持<code class="language-plaintext highlighter-rouge">sha2</code>的加密方式.修改密码加密方式:<code class="language-plaintext highlighter-rouge">ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root'; </code></p>
+:ET
