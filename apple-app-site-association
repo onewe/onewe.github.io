@@ -5,7 +5,16 @@
            {
                 "paths":["*"],
                 "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
-            }
+           },
+           {
+                "paths":["/app/*"],
+                "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
+           },
+           {
+                "paths":["/appm/*"],
+                "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant.push"
+           },
+
         ]
     }
 }
