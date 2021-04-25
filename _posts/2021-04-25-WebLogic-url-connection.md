@@ -1,7 +1,7 @@
 ---
 title: WebLogic 第三弹,代码都去哪了,绕过https证书验证失效？
-key: weblogic-url-connection-2021-01-19
-date: 2021/03/22 17:01:25
+key: weblogic-url-connection-2021-04-25
+date: 2021/04/25 10:01:25
 tags:
 - java
 - Weblogic
