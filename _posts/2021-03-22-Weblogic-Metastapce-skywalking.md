@@ -1,6 +1,6 @@
 ---
 title: WebLogic Metaspace OOM 解决案例（后续之SkyWalking）
-key: web logic-classloader-leak-2021-01-19
+key: web logic-classloader-leak-2021-03-22
 date: 2021/03/22 17:01:25
 tags:
 - java
