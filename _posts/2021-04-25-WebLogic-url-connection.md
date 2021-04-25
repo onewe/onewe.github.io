@@ -59,7 +59,7 @@ subtitle: 奇怪了,为什么代码未生效呢?是不是代码不见了？
 
     - ![gbn5AK](https://itinfo.oss-cn-hongkong.aliyuncs.com/img/gbn5AK.png)
 
-      ​	这里使用了一个工厂进行创建，如果没有设置工厂的话，默认是 `SimpleClientHttpRequestFactory` 为了能跳过 `https` 证书校验，创建了一个工厂对象，并设置到了 restTemplate 里。主要是为了重写工厂对象中的 `prepareConnection` 方法。
+      ​	这里使用了一个工厂进行创建，如果没有设置工厂的话，默认是 `SimpleClientHttpRequestFactory` 为了能跳过 `https` 证书校验，需要创建一个自定义的工厂对象，并设置到了 restTemplate 里,主要是为了重写工厂对象中的 `prepareConnection` 方法。
 
       ​	 `prepareConnection` 能够在连接创建完毕之后进行预处理，这里的预处理就包括跳过 `https` 证书校验等.
 
