@@ -4,24 +4,25 @@
         "details":[
            {
                 "paths":["*"],
-                "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
+                 "appID":"965WYQRG9N.com.yxun.ThreeGorgesEmall"
            },
            {
-                "paths":["/app/*"],
+                "paths":["*"],
                 "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
            },
            {
-                "paths":["/appm/*"],
-                "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant.push"
+                "paths":["*"],
+                "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
+           },
+           {
+                "paths":["*"],
+                "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant"
            },
            {
                 "paths":["*"],
                 "appID":"965WYQRG9N.com.youxun.ThreeGorgesMerchant"
            },
-           {
-                "paths":["*"],
-                "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
-           },
+
         ]
     }
 }
