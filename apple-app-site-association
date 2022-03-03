@@ -2,27 +2,26 @@
     "applinks":{
         "apps":[],
         "details":[
-           {
-                "paths":["*"],
+            {
+                "paths":["/emallapp/mbdownload/pages/custdownload/*"],
                  "appID":"965WYQRG9N.com.yxun.ThreeGorgesEmall"
-           },
-           {
-                "paths":["*"],
-                "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
-           },
-           {
-                "paths":["*"],
-                "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
-           },
-           {
-                "paths":["*"],
-                "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant"
-           },
-           {
-                "paths":["*"],
+            },
+            {
+                "paths":["/merAppDownload/*"],
                 "appID":"965WYQRG9N.com.youxun.ThreeGorgesMerchant"
-           },
-
+            },
+            {
+                "paths":["/emallapp/mbdownload/pages/custdownload/*"],
+                "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
+            },
+            {
+                "paths":["/merAppDownload/*"],
+                "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant"
+            },
+            {
+                "paths":["/wx/*"],
+                "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
+            }
         ]
     }
 }
