@@ -3,7 +3,7 @@
         "apps":[],
         "details":[
             {
-                "paths":["/emallapp/mbdownload/pages/custdownload/*"],
+                "paths":["/emallapp/mbdownload/pages/*"],
                  "appID":"965WYQRG9N.com.yxun.ThreeGorgesEmall"
             },
             {
@@ -11,7 +11,7 @@
                 "appID":"965WYQRG9N.com.youxun.ThreeGorgesMerchant"
             },
             {
-                "paths":["/emallapp/mbdownload/pages/custdownload/*"],
+                "paths":["/emallapp/mbdownload/pages/*"],
                 "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
             },
             {
