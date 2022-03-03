@@ -3,19 +3,19 @@
         "apps":[],
         "details":[
             {
-                "paths":["/emallapp/mbdownload/pages/custdownload"],
+                "paths":["/emallapp/mbdownload/pages/custdownload/*"],
                  "appID":"965WYQRG9N.com.yxun.ThreeGorgesEmall"
             },
             {
-                "paths":["/merAppDownload"],
+                "paths":["/merAppDownload/*"],
                 "appID":"965WYQRG9N.com.youxun.ThreeGorgesMerchant"
             },
             {
-                "paths":["/emallapp/mbdownload/pages/custdownload"],
+                "paths":["/emallapp/mbdownload/pages/custdownload/*"],
                 "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
             },
             {
-                "paths":["/merAppDownload"],
+                "paths":["/merAppDownload/*"],
                 "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant"
             },
             {
