@@ -3,23 +3,7 @@
         "apps":[],
         "details":[
             {
-                "paths":["/emallapp/mbdownload/pages/*"],
-                 "appID":"965WYQRG9N.com.yxun.ThreeGorgesEmall"
-            },
-            {
-                "paths":["/merAppDownload/*"],
-                "appID":"965WYQRG9N.com.youxun.ThreeGorgesMerchant"
-            },
-            {
-                "paths":["/emallapp/mbdownload/pages/*"],
-                "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
-            },
-            {
-                "paths":["/merAppDownload/*"],
-                "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant"
-            },
-            {
-                "paths":["/wx/*"],
+                "paths":["/nmbank/#/*"],
                 "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
             }
         ]
