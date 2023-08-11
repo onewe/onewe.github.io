@@ -19,7 +19,7 @@
                 "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant"
             },
             {
-                "paths":["/nmbank/*"],
+                "paths":["/nmbank/"],
                 "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
             }
         ]
