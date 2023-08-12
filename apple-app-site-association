@@ -3,22 +3,6 @@
         "apps":[],
         "details":[
             {
-                "paths":["*"],
-                 "appID":"965WYQRG9N.com.yxun.ThreeGorgesEmall"
-            },
-            {
-                "paths":["*"],
-                "appID":"965WYQRG9N.com.youxun.ThreeGorgesMerchant"
-            },
-            {
-                "paths":["*"],
-                "appID":"965WYQRG9N.com.ccqtgb.sxf.remotepush"
-            },
-            {
-                "paths":["*"],
-                "appID":"965WYQRG9N.com.ccqtgb.sxf.sxmerchant"
-            },
-            {
                 "paths":["/nmbank/#/*"],
                 "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
             }
