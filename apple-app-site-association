@@ -3,7 +3,7 @@
         "apps":[],
         "details":[
             {
-                "paths":["/nmbank/#/*"],
+                "paths":["/nmbank/"],
                 "appID":"965WYQRG9N.com.ccqtgb.ThreeGorgesMobileBank"
             }
         ]
